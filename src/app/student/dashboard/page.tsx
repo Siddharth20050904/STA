@@ -1,12 +1,6 @@
 "use client";
 import React, { useState } from "react";
 
-type Teacher = {
-    id: string;
-    name: string;
-    subject: string;
-};
-
 type ChatMessage = {
     id: string;
     teacherId: string;
@@ -23,30 +17,6 @@ type Appointment = {
     time: string;
     status: "upcoming" | "completed";
 };
-
-const mockTeachers: Teacher[] = [
-    {
-        id: "1",
-        name: "Mr. John Doe",
-        subject: "Mathematics",
-    },
-    {
-        id: "2",
-        name: "Ms. Jane Smith",
-        subject: "Physics",
-    },
-    {
-        id: "3",
-        name: "Ms. Jane Smith",
-        subject: "Physics",
-    },
-
-    {
-        id: "4",
-        name: "Ms. Jane Smith",
-        subject: "Physics",
-    },
-];
 
 const mockChatHistory: ChatMessage[] = [
     {
@@ -117,10 +87,8 @@ const mockAppointments: Appointment[] = [
 ];
 
 export default function StudentDashboard() {
-    const [teachers] = useState<Teacher[]>(mockTeachers);
     const [appointments] = useState<Appointment[]>(mockAppointments);
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>(mockChatHistory);
-    const [message, setMessage] = useState<string>("");
 
     // Sort chat history to show unread messages at top
     const sortedChatHistory = [...chatHistory].sort((a, b) => {

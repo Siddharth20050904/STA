@@ -1,6 +1,4 @@
 "use client";
-
-import { error } from "console";
 import React, { useState } from "react";
 
 export default function LoginPage() {
@@ -8,8 +6,6 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
