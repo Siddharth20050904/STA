@@ -1,6 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import StudentsNavbar from "@/app/components/students_navbar";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type Appointment = {
     id: number;
@@ -17,11 +19,11 @@ const initialAppointments: Appointment[] = [
     { id: 2, teacher: "Ms. Jane Smith", subject: "Physics", date: "2025-10-01", time: "09:00", message: "Review chapter 3", status: "completed" },
 ];
 
-// (old mock chat/appointments removed) - using `initialAppointments` as source of truth
-
 export default function StudentDashboard() {
-    // Appointments state (used for both left panel and right summary)
+    const router = useRouter();
+    const {status} = useSession();
     const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
+    console.log(status);
 
     // Left panel: interactive appointment list (search/filter/expand/add)
     const [search, setSearch] = useState("");
@@ -38,6 +40,12 @@ export default function StudentDashboard() {
     );
     let displayedAppointments = filteredAppointments;
     if (filter !== "all") displayedAppointments = filteredAppointments.filter(a => a.status === filter);
+
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            router.push("/signin");
+        }
+    }, [status, router]);
 
     const openAddModal = () => {
         setForm({ teacher: "", subject: "", date: "", time: "", message: "" });

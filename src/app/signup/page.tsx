@@ -1,16 +1,35 @@
 "use client";
 import React, { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { registerStudent } from "../api/auth/register";
+
+async function handleSignUp(params: { email: string; password: string; name: string}) {
+    const result = await registerStudent(params.name, params.email, params.password);
+    if(!result) return null;
+
+    const signInResult = await signIn("credentials", { email: params.email, password: params.password, redirect: false });
+    if(!signInResult) return null;
+    return signInResult;
+}
 
 export default function LoginPage() {
+    const route = useRouter();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle login logic here
-        alert(`Name: ${username}\nEmail: ${email}\nPassword: ${password}\nConfirm Password: ${confirmPassword}`);
+        const result = await handleSignUp({ name: username, email: email, password: password });
+        if(!result) return null;
+
+        const signInResult = await signIn("credentials", { email: email, password: password, redirect: false });
+        if(!signInResult) return null;
+        if (result) {
+            route.push("/dashboard");
+        }
     };
 
     return (
