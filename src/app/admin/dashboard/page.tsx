@@ -1,5 +1,7 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 type Teacher = {
     id: number;
@@ -38,6 +40,19 @@ export default function AdminDashboard() {
     const [students, setStudents] = useState<Student[]>(initialStudents);
     const [studentSearch, setStudentSearch] = useState('');
     const [studentFilter, setStudentFilter] = useState<'all' | 'pending' | 'approved'>('all');
+
+    // Auth and routing
+    const { data: session, status } = useSession();
+    const router = useRouter();
+
+    useEffect(()=>{
+        if(status === 'unauthenticated') router.push('/signin');
+        else if(session?.user.type === 'STUDENT'){
+            if(!session.user.isVerified) router.push('/request-verification');
+            else router.push('/student/dashboard');
+        }
+        else if(session?.user.type === 'ADMIN') router.push('/admin/dashboard');
+    }, [session, router, status]);
 
     // Teacher functions
     const handleTeacherSearch = (e: React.ChangeEvent<HTMLInputElement>) => setTeacherSearch(e.target.value);

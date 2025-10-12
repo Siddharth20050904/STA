@@ -5,26 +5,29 @@ import  { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-    const {status} = useSession();
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const { data, status } = useSession();
+
+    useEffect(() => {
+        if (status === "authenticated") {
+            if(data?.user?.type === "ADMIN" && data?.user?.isVerified) router.push("admin/dashboard");
+            else if(data?.user?.type === "TEACHER" && data?.user?.isVerified) router.push("teacher/dashboard");
+            else if(data?.user?.type === "STUDENT" && data?.user?.isVerified) router.push("student/dashboard");
+            else alert("Your account is not verified yet. Please contact the administrator.");
+        }
+    }, [status, router, data]); 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const res = await signIn("credentials", { email, password, redirect: false });
+        const res = await signIn("credentials", { email, password, type:"STUDENT", redirect: false});
         if(res?.ok) {
             router.push("/student/dashboard");
         }else{
             alert("Login failed");
         }
     };
-
-    useEffect(() => {
-        if(status === "authenticated") {
-            router.push("/student/dashboard");
-        }
-    }, [status, router]);
 
     return (
         // component

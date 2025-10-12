@@ -1,8 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { registerStudent } from "../api/auth/register";
+import { useSession } from "next-auth/react";
 
 async function handleSignUp(params: { email: string; password: string; name: string}) {
     const result = await registerStudent(params.name, params.email, params.password);
@@ -19,6 +20,16 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+
+    const { data, status } = useSession();
+    useEffect(() => {
+        if (status === "authenticated") {
+            if(data?.user?.type === "ADMIN" && data?.user?.isVerified) route.push("admin/dashboard");
+            else if(data?.user?.type === "TEACHER" && data?.user?.isVerified) route.push("teacher/dashboard");
+            else if(data?.user?.type === "STUDENT" && data?.user?.isVerified) route.push("student/dashboard");
+            else alert("Your account is not verified yet. Please contact the administrator.");
+        }
+    }, [status, route, data]); 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -112,7 +123,7 @@ export default function LoginPage() {
             {/* Right Pane */}
             <div className="w-full bg-gray-100 lg:w-1/2 flex items-center justify-center">
                 <div className="max-w-md w-full p-6">
-                <h1 className="text-3xl font-semibold mb-6 text-black text-center">Sign Up</h1>
+                <h1 className="text-3xl font-semibold mb-6 text-black text-center">Sign Up As Student</h1>
                 <form action="#" method="POST" className="space-y-4 bg-gray-50 p-6 rounded-lg shadow-md text-black">
                     {/* Your form elements go here */}
                     <div>

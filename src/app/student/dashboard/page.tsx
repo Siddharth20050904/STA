@@ -21,7 +21,7 @@ const initialAppointments: Appointment[] = [
 
 export default function StudentDashboard() {
     const router = useRouter();
-    const {status} = useSession();
+    const {data: session, status} = useSession();
     const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
     console.log(status);
 
@@ -41,11 +41,12 @@ export default function StudentDashboard() {
     let displayedAppointments = filteredAppointments;
     if (filter !== "all") displayedAppointments = filteredAppointments.filter(a => a.status === filter);
 
-    useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/signin");
-        }
-    }, [status, router]);
+    useEffect(()=>{
+        if(status === 'unauthenticated') router.push('/signin');
+        else if(session?.user.type === 'STUDENT' && !session?.user.isVerified) router.push('/verification-request');
+        else if(session?.user.type === 'ADMIN') router.push('/admin/dashboard');
+        else if(session?.user.type === 'TEACHER') router.push('/teacher/dashboard');
+    }, [session, router, status]);
 
     const openAddModal = () => {
         setForm({ teacher: "", subject: "", date: "", time: "", message: "" });

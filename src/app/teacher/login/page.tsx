@@ -1,15 +1,32 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import  { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+    const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const { data, status } = useSession();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    useEffect(() => {
+        if (status === "authenticated") {
+            if(data?.user?.type === "ADMIN" && data?.user?.isVerified) router.push("/admin/dashboard");
+            else if(data?.user?.type === "TEACHER" && data?.user?.isVerified) router.push("/teacher/dashboard");
+            else if(data?.user?.type === "STUDENT" && data?.user?.isVerified) router.push("/student/dashboard");
+            else alert("Your account is not verified yet. Please contact the administrator.");
+        }
+    }, [status, router, data]); 
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle login logic here
-        alert(`Email: ${email}\nPassword: ${password}`);
+        const res = await signIn("credentials", { email, password, redirect: false });
+        if(res?.ok) {
+            router.push("/teacher/dashboard");
+        }else{
+            alert("Login failed");
+        }
     };
 
     return (
@@ -114,8 +131,8 @@ export default function LoginPage() {
                     </div>
                     <div className="mt-6 text-center text-base text-gray-700">
                         <div className="mb-2">Or login as:</div>
-                        <a href="/admin/login" className="mx-2 text-black underline font-medium hover:text-gray-800">Admin</a>
                         <a href="/signin" className="mx-2 text-black underline font-medium hover:text-gray-800">Student</a>
+                        <a href="/admin/login" className="mx-2 text-black underline font-medium hover:text-gray-800">Admin</a>
                     </div>
                 </form>
                 </div>

@@ -1,6 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import StudentsNavbar from "@/app/components/students_navbar";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type Appointment = {
 	id: number;
@@ -24,6 +26,18 @@ export default function TeacherDashboard() {
 	const [search, setSearch] = useState("");
 	// left panel now only shows pending requests; no filter state needed here
 	const [expanded, setExpanded] = useState<number | null>(null);
+
+	const { data: session, status } = useSession();
+	const router = useRouter();
+
+	useEffect(()=>{
+		if(status === 'unauthenticated') router.push('/signin');
+		else if(session?.user.type === 'STUDENT'){
+			if(!session.user.isVerified) router.push('/request-verification');
+			else router.push('/student/dashboard');
+		}
+		else if(session?.user.type === 'ADMIN') router.push('/admin/dashboard');
+	}, [session, router, status]);
 
 	const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value);
 

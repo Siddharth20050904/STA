@@ -1,7 +1,6 @@
 import { AuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcrypt";
+import { loginAdmin, loginStudent } from "@/app/api/auth/login";
 
 declare module "next-auth" {
   interface Session {
@@ -36,41 +35,21 @@ export const authOptions: AuthOptions = {
       credentials: {
         email: { label: "Email", type: "text", placeholder: "" },
         password: { label: "Password", type: "password", placeholder: "" },
+        type: { label: "Role", type: "text", placeholder: "" }
       },
       async authorize(credentials) {
-        console.log("=== Authorization attempt started ===");
-        console.log("Credentials:", credentials);
         
         if (!credentials?.email || !credentials.password) {
           console.log("Missing credentials");
           return null;
         }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-
-        console.log("User found:", user ? "Yes" : "No");
-
-        if (!user) {
-          console.log("User not found");
-          return null;
+        let user;
+        if(credentials.type==="STUDENT"){
+          user = await loginStudent({email:credentials.email, password:credentials.password})
+        }else if(credentials.type==="ADMIN"){
+          user = await loginAdmin({email:credentials.email, password:credentials.password})
         }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        console.log("Password valid:", isPasswordValid);
-
-        if (!isPasswordValid) {
-          console.log("Invalid password");
-          return null;
-        }
-
-        console.log("Authorization successful");
-        
+        if(!user) return null;
         return {
           id: user.id,
           email: user.email,

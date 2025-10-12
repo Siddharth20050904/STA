@@ -19,7 +19,26 @@ enum Role {
   ADMIN
 }
 
-model User{
+model Students{
+  name String
+  email String @unique
+  id String @id @default(uuid())
+  type Role
+  password String
+  isVerified Boolean @default(false)
+}
+
+model Teachers{
+  name String
+  email String @unique
+  id String @id @default(uuid())
+  type Role
+  isVerified Boolean @default(false)
+  department String
+  subjects String[]
+}
+
+model Admins{
   name String
   email String @unique
   id String @id @default(uuid())

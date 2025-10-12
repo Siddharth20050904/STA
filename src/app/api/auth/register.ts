@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 
 export async function registerStudent(name: string, email: string, password: string) {
     try{
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma.students.findUnique({
             where: { email },
         });
 
@@ -14,7 +14,7 @@ export async function registerStudent(name: string, email: string, password: str
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newUser = await prisma.user.create({
+        const newUser = await prisma.students.create({
             data: { name, email, password: hashedPassword, type: "STUDENT" , isVerified: false},
         });
 
@@ -24,3 +24,13 @@ export async function registerStudent(name: string, email: string, password: str
         throw new Error("Error registering user");
     }
 }
+// TODO: Register Teacher
+
+// export async function registerTeacher(data :{
+//     name :string,
+//     email :string,
+//     subjects : string[],
+//     department : string
+// }) {
+    
+// }
