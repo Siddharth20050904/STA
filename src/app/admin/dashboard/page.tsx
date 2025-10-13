@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
+import { fetchAllTeachers, addTeacher } from '@/app/api/teacher_manager/teacher_manager';
 
 type Teacher = {
-    id: number;
+    id: string;
     name: string;
     department: string;
     subject: string[];
@@ -19,15 +20,12 @@ type Student = {
     approved: boolean;
 };
 
-interface InputField{
-    id: string,
-    value: string
-}
+// interface InputField{
+//     id: string,
+//     value: string
+// }
 
-const initialTeachers: Teacher[] = [
-    { id: 1, name: 'John Doe', department: 'Math', subject: ['Algebra', 'Math','Algebra', 'Math','Algebra', 'Math','Algebra', 'Math'], email: 'john.doe@email.com' },
-    { id: 2, name: 'Jane Smith', department: 'Science', subject: ['Physics'], email: 'jane.smith@email.com' },
-];
+const initialTeachers: Teacher[] = [];
 
 const initialStudents: Student[] = [
     { id: 1, name: 'Alice', email: 'alice@email.com', approved: false },
@@ -38,10 +36,10 @@ export default function AdminDashboard() {
     // Teacher management state
     const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
     const [teacherSearch, setTeacherSearch] = useState('');
-    const [teacherForm, setTeacherForm] = useState<{ name: string; department: string; subject: string[]; email: string }>({ name: '', department: '', subject: [], email: '' });
-    const [editingTeacherId, setEditingTeacherId] = useState<number | null>(null);
-    const [teacherModalOpen, setTeacherModalOpen] = useState(false);
-    const [inputField, setInputField] = useState<InputField[]>([]);
+    const [teacherForm, setTeacherForm] = useState<{ name: string; department: string; email: string }>({ name: '', department: '' , email: '' });
+    const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
+    const [teacherModalOpen, setTeacherModalOpen] = useState(false)
+    const [inputSubjectField, setInputSubjectField] = useState<string[]>(['']);
 
     // Student approval state
     const [students, setStudents] = useState<Student[]>(initialStudents);
@@ -61,38 +59,47 @@ export default function AdminDashboard() {
         else if(session?.user.type === 'ADMIN') router.push('/admin/dashboard');
     }, [session, router, status]);
 
+    useEffect(()=>{
+        const fetchAllTeachersFunc = async()=>{
+            const fetchedTeachers = await fetchAllTeachers();
+            setTeachers(prevTeachers => [...prevTeachers, ...fetchedTeachers!.map(ele=>({
+                name: ele.name, email: ele.email, subject: ele.subjects, department:ele.department, id: ele.id
+            }))]);
+        }
+
+        fetchAllTeachersFunc()
+    }, [])
+
     // Teacher functions
     const handleTeacherSearch = (e: React.ChangeEvent<HTMLInputElement>) => setTeacherSearch(e.target.value);
     const filteredTeachers = teachers.filter(t => t.name.toLowerCase().includes(teacherSearch.toLowerCase()) || t.department.toLowerCase().includes(teacherSearch.toLowerCase()));
     const openAddTeacher = () => {
-        setTeacherForm({ name: '', department: '', subject: [], email: '' });
+        setTeacherForm({ name: '', department: '', email: '' });
         setEditingTeacherId(null);
         setTeacherModalOpen(true);
     };
     const openEditTeacher = (t: Teacher) => {
-        setTeacherForm({ name: t.name, department: t.department, subject: t.subject, email: t.email });
+        setTeacherForm({ name: t.name, department: t.department, email: t.email });
         setEditingTeacherId(t.id);
         setTeacherModalOpen(true);
     };
     const handleTeacherFormChange = (e: React.ChangeEvent<HTMLInputElement>) => setTeacherForm({ ...teacherForm, [e.target.name]: e.target.value });
-    const handleTeacherFormSubmit = (e: React.FormEvent) => {
+    const handleTeacherFormSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
-        let newTeacher;
         if (editingTeacherId !== null) {
-            setTeachers(teachers.map(t => t.id === editingTeacherId ? { ...t, ...teacherForm } : t));
+            setTeachers(teachers.map(t => t.id === editingTeacherId ? { ...t, name: teacherForm.name, email: teacherForm.email, department: teacherForm.department, subject: inputSubjectField } : t));
         } else {
-            newTeacher = setTeachers([...teachers, { id: Date.now(), ...teacherForm }]);
+            const newTeacher = await addTeacher({name: teacherForm.name, email: teacherForm.email, department: teacherForm.department, subjects: inputSubjectField})
+            setTeachers([...teachers, { id:newTeacher!.id , name: teacherForm.name, email: teacherForm.email, department: teacherForm.department, subject: inputSubjectField}]);
         }
-        console.log(newTeacher);
         setTeacherModalOpen(false);
-        setTeacherForm({ name: '', department: '', subject: [], email: '' });
-        setEditingTeacherId(null);
+        setTeacherForm({ name: '', department: '', email: '' });
     };
 
     // Expandable row state
-    const [expandedTeacher, setExpandedTeacher] = useState<number | null>(null);
+    const [expandedTeacher, setExpandedTeacher] = useState<string | null>(null);
     const [expandedStudent, setExpandedStudent] = useState<number | null>(null);
-    const handleDeleteTeacher = (id: number) => {
+    const handleDeleteTeacher = (id: string) => {
         if (window.confirm('Are you sure you want to delete this teacher?')) {
             setTeachers(teachers.filter(t => t.id !== id));
         }
@@ -125,8 +132,16 @@ export default function AdminDashboard() {
     };
 
     //Adding Field
-    const handleAddInput = ()=> setInputField(prevItems => [...prevItems, {id: "subject"+(inputField.length+1).toString(), value: ''}]);
-    const handleSubInput = (indexToDelete: number)=> setInputField(prevItems => prevItems.filter((_, index)=> index !== indexToDelete))
+    const handleAddInput = ()=> setInputSubjectField(prevItems => [...prevItems, '']);
+    const handleSubInput = (indexToDelete: number)=> setInputSubjectField(prevItems => prevItems.filter((_, index)=> index !== indexToDelete))
+
+    //Changing Field
+    const handleChangeSubjectsInputField = (id: number, value: string)=>{
+        setInputSubjectField(prevItems=>{
+            const updated = prevItems.map((item, idx)=> idx===id ? value : item);
+            return updated
+        });
+    }
 
     return (
         <div className="min-h-screen bg-white flex flex-col text-black">
@@ -159,8 +174,9 @@ export default function AdminDashboard() {
                                             key={t.id}
                                             className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
                                             onClick={e => {
-                                                // Only expand if not clicking an action button
-                                                if ((e.target as HTMLElement).tagName !== 'BUTTON') setExpandedTeacher(expandedTeacher === t.id ? null : t.id);
+                                                if ((e.target as HTMLElement).tagName !== 'BUTTON') {
+                                                    setExpandedTeacher(expandedTeacher === t.id ? null : t.id);
+                                                };
                                             }}
                                             style={{ cursor: 'pointer' }}
                                         >
@@ -273,8 +289,8 @@ export default function AdminDashboard() {
             </div>
             {/* Modal for Add/Edit Teacher */}
             {teacherModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-blur bg-opacity-40 backdrop-blur-sm" onClick={() => setTeacherModalOpen(false)}>
-                    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md relative" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-blur bg-opacity-40 backdrop-blur-sm min-height-screen" onClick={() => setTeacherModalOpen(false)}>
+                    <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-md relative max-h-160 overflow-y-auto border border-16 border-white" onClick={e => e.stopPropagation()}>
                         <h2 className="text-2xl font-semibold mb-4 text-center text-black">{editingTeacherId !== null ? 'Edit Teacher' : 'Add Teacher'}</h2>
                         <form onSubmit={handleTeacherFormSubmit} className="space-y-4">
                             <div>
@@ -288,16 +304,18 @@ export default function AdminDashboard() {
                             <div>
                                 <div className='flex flex-row justify-between m-1'>
                                     <label htmlFor="subject" className="block text-sm font-medium text-black">Subject</label>
-                                    <button className='hover:bg-gray-300 rounded' onClick={() => handleAddInput()}> <Image src={'/plus.svg'} width={20} height={10} alt='add'></Image> </button>
+                                    <button className='hover:bg-gray-300 rounded' onClick={handleAddInput}> <Image src={'/plus.svg'} width={20} height={10} alt='add'></Image> </button>
                                 </div>
-                                <input id="subject" name="subject" value={teacherForm.subject} onChange={handleTeacherFormChange} className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300" required />
+                                {/* <input id="subject" name="subject" value={teacherForm.subject} onChange={handleTeacherFormChange} className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300" required /> */}
                                 
                                 {
-                                    inputField.map((field, index)=>{
+                                    inputSubjectField.map((field, index)=>{
                                         return (
                                             <div key={index} className='flex flex-row justify-between my-1'>
-                                                <input name={field.id} value={field.value} onChange={handleTeacherFormChange} className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300" required />
-                                                <button className='border border-transparent hover:border-black rounded m-1 mt-3 h-5' onClick={() => handleSubInput(index)}> <Image src={'/minus.svg'} width={20} height={0} alt='add'></Image> </button>
+                                                <input name={index.toString()} value={field} onChange={(e)=>handleChangeSubjectsInputField(index, e.target.value)} className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300" required />
+                                                {index>0 &&
+                                                    <button className='border border-transparent hover:border-black rounded m-1 mt-3 h-5' onClick={() => handleSubInput(index)}> <Image src={'/minus.svg'} width={20} height={0} alt='add'></Image> </button>
+                                                }                                                
                                             </div>
                                         )
                                     })
