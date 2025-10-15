@@ -1,11 +1,5 @@
-/*
-  Warnings:
-
-  - You are about to drop the `User` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- DropTable
-DROP TABLE "public"."User";
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('STUDENT', 'TEACHER', 'ADMIN');
 
 -- CreateTable
 CREATE TABLE "Students" (
@@ -28,6 +22,7 @@ CREATE TABLE "Teachers" (
     "isVerified" BOOLEAN NOT NULL DEFAULT false,
     "department" TEXT NOT NULL,
     "subjects" TEXT[],
+    "verificationToken" TEXT NOT NULL,
 
     CONSTRAINT "Teachers_pkey" PRIMARY KEY ("id")
 );

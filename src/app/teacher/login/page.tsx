@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from "react";
 import  { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { sendVerificationLink } from "@/app/api/handleMails/sendVerificationMail";
 
 export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
     const { data, status } = useSession();
 
     useEffect(() => {
@@ -21,12 +21,7 @@ export default function LoginPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const res = await signIn("credentials", { email, password, redirect: false });
-        if(res?.ok) {
-            router.push("/teacher/dashboard");
-        }else{
-            alert("Login failed");
-        }
+        await sendVerificationLink(email);
     };
 
     return (
@@ -115,10 +110,6 @@ export default function LoginPage() {
                     <div>
                     <label htmlFor="email" className="block text-sm font-medium text-black">Email</label>
                     <input type="text" onChange={(e) => setEmail(e.target.value)} id="email" name="email" className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors duration-300" />
-                    </div>
-                    <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-black">Password</label>
-                    <input type="password" onChange={(e) => setPassword(e.target.value)} id="password" name="password" className="mt-1 p-2 w-full border rounded-md focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors duration-300" />
                     </div>
                     <div>
                     <button

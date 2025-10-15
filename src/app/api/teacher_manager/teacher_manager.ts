@@ -15,7 +15,8 @@ export const addTeacher = async(data : {
                 subjects: data.subjects,
                 department: data.department,
                 isVerified: true,
-                type: "TEACHER"
+                type: "TEACHER",
+                verificationToken: ''
             }
         });
         return addedTeacher;
