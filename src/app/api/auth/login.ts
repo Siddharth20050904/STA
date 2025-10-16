@@ -1,6 +1,9 @@
+"use server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from 'bcrypt';
 import { error } from "console";
+// import { sendVerificationLink } from "../handleMails/sendVerificationMail";
+import { verifyToken } from "@/lib/jwt";
 
 export const loginStudent = async(data :{ email: string, password: string })=>{
     const user = await prisma.students.findUnique({
@@ -36,4 +39,20 @@ export const loginAdmin = async(data :{ email: string, password: string })=>{
     if(!isPasswordValid) return null;
 
     return user;
+}
+
+export const loginTeacher = async(token: string)=>{
+    const payLoad = verifyToken(token);
+    if(!payLoad) return null;
+    const {userId, email, role} = payLoad;
+
+    const teacher = await prisma.teachers.findUnique({
+        where:{
+            id: userId,
+            email,
+            type: role
+        }
+    });
+
+    return teacher;
 }

@@ -4,18 +4,16 @@ import { prisma } from '@/lib/prisma';
 import { createToken } from '@/lib/jwt';
 
 export const sendVerificationLink = async(email: string)=>{
-    console.log(email)
     const teacher = await prisma.teachers.findUnique({
         where: {email},
     });
     if(!teacher) return null;
 
-    const verificationToken = createToken({userId: teacher.id, email: teacher.email, role: teacher.type}, 60*10);
+    const verificationToken = createToken({userId: teacher.id, email: teacher.email, role: teacher.type}, 10*60);
     const teacherWithToken = await prisma.teachers.update({
         where: {email},
         data: {verificationToken}
     });
-    console.log(teacherWithToken)
         
 
     const transporter = nodemailer.createTransport({
@@ -37,7 +35,7 @@ export const sendVerificationLink = async(email: string)=>{
             <h2>Hello ${teacherWithToken.name},</h2>
             <p>Thank you for signing up as a teacher! Please verify your email address by clicking the link below:</p>
             <p>
-            <a href="${teacherWithToken.verificationToken}" 
+            <a href="http://localhost:3000/verify?token=${teacherWithToken.verificationToken}" 
                 style="background-color: #4F46E5; color: #fff; padding: 10px 16px; text-decoration: none; border-radius: 6px;">
                 Verify Email
             </a>
@@ -48,7 +46,5 @@ export const sendVerificationLink = async(email: string)=>{
         </div>
         `,
     };
-
-    // Send email
     await transporter.sendMail(mailOptions);
 }

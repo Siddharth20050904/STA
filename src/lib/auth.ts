@@ -1,6 +1,7 @@
 import { AuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { loginAdmin, loginStudent } from "@/app/api/auth/login";
+import { loginAdmin, loginStudent, loginTeacher } from "@/app/api/auth/login";
+import { text } from "stream/consumers";
 
 declare module "next-auth" {
   interface Session {
@@ -35,19 +36,26 @@ export const authOptions: AuthOptions = {
       credentials: {
         email: { label: "Email", type: "text", placeholder: "" },
         password: { label: "Password", type: "password", placeholder: "" },
-        type: { label: "Role", type: "text", placeholder: "" }
+        type: { label: "Role", type: "text", placeholder: "" },
+        token: { label: "JWT", type: "text", placeholder: "" },
       },
       async authorize(credentials) {
-        
-        if (!credentials?.email || !credentials.password) {
-          console.log("Missing credentials");
-          return null;
-        }
+
         let user;
-        if(credentials.type==="STUDENT"){
+        if(credentials!.type==="STUDENT"){
+          if (!credentials?.email || !credentials.password) {
+            console.log("Missing credentials");
+            return null;
+          }
           user = await loginStudent({email:credentials.email, password:credentials.password})
-        }else if(credentials.type==="ADMIN"){
+        }else if(credentials!.type==="ADMIN"){
+          if (!credentials?.email || !credentials.password) {
+            console.log("Missing credentials");
+            return null;
+          }
           user = await loginAdmin({email:credentials.email, password:credentials.password})
+        }else{
+          user = await loginTeacher(credentials!.token);
         }
         if(!user) return null;
         return {
