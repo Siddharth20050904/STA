@@ -1,7 +1,6 @@
 import { AuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { loginAdmin, loginStudent, loginTeacher } from "@/app/api/auth/login";
-import { text } from "stream/consumers";
 
 declare module "next-auth" {
   interface Session {
