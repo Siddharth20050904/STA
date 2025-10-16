@@ -1,24 +1,11 @@
-"use client";
-import React, { useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+// app/verify/page.tsx
+import { Suspense } from 'react';
+import VerifyContent from './VerifyContent'; // A component that uses useSearchParams()
 
-function Verify() {
-    const searchParams = useSearchParams();
-    const token = searchParams.get('token');
-    const router = useRouter();
-    useEffect(()=>{
-        const verifyTeacher = async()=>{
-            const teacher = await signIn('credentials',{type: 'TEACHER', token, redirect:false});
-            if(teacher) router.push('/teacher/dashboard');
-        }
-
-        verifyTeacher();
-    }, [token, router]);
-    return (
-        <div>page</div>
-    )
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div>Loading verification details...</div>}>
+      <VerifyContent />
+    </Suspense>
+  );
 }
-
-export default Verify;
