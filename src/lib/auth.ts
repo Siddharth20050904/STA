@@ -41,6 +41,7 @@ export const authOptions: AuthOptions = {
       async authorize(credentials) {
 
         let user;
+        console.log(credentials);
         if(credentials!.type==="STUDENT"){
           if (!credentials?.email || !credentials.password) {
             console.log("Missing credentials");
@@ -54,6 +55,7 @@ export const authOptions: AuthOptions = {
           }
           user = await loginAdmin({email:credentials.email, password:credentials.password})
         }else{
+          console.log("it is triggered");
           user = await loginTeacher(credentials!.token);
         }
         if(!user) return null;

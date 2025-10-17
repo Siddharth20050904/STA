@@ -1,9 +1,11 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { redirect, useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
 import { fetchAllTeachers, addTeacher } from '@/app/api/teacher_manager/teacher_manager';
+import { fetchUnverifiedStudents, verifyStudent, removeStudent } from '@/app/api/student_manager/student_manager';
+import { LogOut } from 'lucide-react';
 
 type Teacher = {
     id: string;
@@ -14,27 +16,16 @@ type Teacher = {
 };
 
 type Student = {
-    id: number;
+    id: string;
     name: string;
     email: string;
     approved: boolean;
 };
 
-// interface InputField{
-//     id: string,
-//     value: string
-// }
-
-const initialTeachers: Teacher[] = [];
-
-const initialStudents: Student[] = [
-    { id: 1, name: 'Alice', email: 'alice@email.com', approved: false },
-    { id: 2, name: 'Bob', email: 'bob@email.com', approved: false },
-];
 
 export default function AdminDashboard() {
     // Teacher management state
-    const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [teacherSearch, setTeacherSearch] = useState('');
     const [teacherForm, setTeacherForm] = useState<{ name: string; department: string; email: string }>({ name: '', department: '' , email: '' });
     const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
@@ -42,7 +33,7 @@ export default function AdminDashboard() {
     const [inputSubjectField, setInputSubjectField] = useState<string[]>(['']);
 
     // Student approval state
-    const [students, setStudents] = useState<Student[]>(initialStudents);
+    const [students, setStudents] = useState<Student[]>([]);
     const [studentSearch, setStudentSearch] = useState('');
     const [studentFilter, setStudentFilter] = useState<'all' | 'pending' | 'approved'>('all');
 
@@ -58,7 +49,8 @@ export default function AdminDashboard() {
         }
         else if(session?.user.type === 'ADMIN') router.push('/admin/dashboard');
     }, [session, router, status]);
-
+	
+	//Fetch Teacher
     useEffect(()=>{
         const fetchAllTeachersFunc = async()=>{
             const fetchedTeachers = await fetchAllTeachers();
@@ -68,7 +60,19 @@ export default function AdminDashboard() {
         }
 
         fetchAllTeachersFunc()
-    }, [])
+    }, []);
+
+	//Fetch Student
+	useEffect(()=>{
+		const fetchUnverifiedStudentsFunc = async()=>{
+			const fetchedStudents = await fetchUnverifiedStudents();
+			setStudents(prevItems=> [...prevItems, ...fetchedStudents!.map(student => ({
+				name: student.name, email: student.email, approved: false, id: student.id
+			}))])
+		}
+
+		fetchUnverifiedStudentsFunc();
+	}, [])
 
     // Teacher functions
     const handleTeacherSearch = (e: React.ChangeEvent<HTMLInputElement>) => setTeacherSearch(e.target.value);
@@ -98,7 +102,7 @@ export default function AdminDashboard() {
 
     // Expandable row state
     const [expandedTeacher, setExpandedTeacher] = useState<string | null>(null);
-    const [expandedStudent, setExpandedStudent] = useState<number | null>(null);
+    const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
     const handleDeleteTeacher = (id: string) => {
         if (window.confirm('Are you sure you want to delete this teacher?')) {
             setTeachers(teachers.filter(t => t.id !== id));
@@ -114,18 +118,23 @@ export default function AdminDashboard() {
     } else if (studentFilter === 'approved') {
         displayedStudents = filteredStudents.filter(s => s.approved);
     }
-    const approvedCount = students.filter(s => s.approved).length;
 
     // Student approval/removal modal state
     const [studentActionModal, setStudentActionModal] = useState<{ open: boolean; student: Student | null; action: 'approve' | 'remove' | null }>({ open: false, student: null, action: null });
     const openStudentActionModal = (student: Student, action: 'approve' | 'remove') => setStudentActionModal({ open: true, student, action });
     const closeStudentActionModal = () => setStudentActionModal({ open: false, student: null, action: null });
-    const confirmStudentAction = () => {
+    const confirmStudentAction = async() => {
         if (studentActionModal.student && studentActionModal.action) {
             if (studentActionModal.action === 'approve') {
-                setStudents(students.map(s => s.id === studentActionModal.student!.id ? { ...s, approved: true } : s));
+				const student = await verifyStudent(studentActionModal.student.id);
+				if(student){
+                	setStudents(students.filter(s => s.id !== studentActionModal.student!.id));
+				}
             } else if (studentActionModal.action === 'remove') {
-                setStudents(students.filter(s => s.id !== studentActionModal.student!.id));
+				const student = await removeStudent(studentActionModal.student.id);
+				if(student){
+                	setStudents(students.filter(s => s.id !== studentActionModal.student!.id));
+				}
             }
         }
         closeStudentActionModal();
@@ -145,7 +154,11 @@ export default function AdminDashboard() {
 
     return (
         <div className="min-h-screen bg-white flex flex-col text-black">
-            <h1 className='text-3xl font-bold text-center p-4'>Admin Dashboard</h1>
+			<div className='flex flex-row justify-between align-center'>
+				<div></div>
+				<h1 className='text-3xl font-bold text-center p-4'>Admin Dashboard</h1>
+				<LogOut className='m-4 mr-8 hover:bg-gray-300 rounded' onClick={()=>{ signOut(); redirect('/') }}></LogOut>
+			</div>
             <div className="flex flex-1 mt-4 items-start justify-center">
                 <div className="flex flex-col md:flex-row gap-8 p-4 md:p-12 bg-gray-100 rounded-lg w-full h-[calc(100vh-0.5rem)]">
                     {/* Teacher Management (Left) */}
@@ -218,7 +231,7 @@ export default function AdminDashboard() {
                     <div className="flex-1 h-full bg-white rounded-none shadow-md sm:p-10 p-6 flex flex-col min-w-0 overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-2xl font-semibold text-black">Approve Students</h2>
-                            <span className="text-sm text-gray-700">Pending: <span className="font-bold">{students.filter(s => !s.approved).length}</span> | Approved: <span className="font-bold">{approvedCount}</span></span>
+                            <span className="text-sm text-gray-700">Pending: <span className="font-bold">{students.filter(s => !s.approved).length}</span></span>
                         </div>
                         {/* Search bar and filter for students */}
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">

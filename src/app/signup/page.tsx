@@ -9,7 +9,7 @@ async function handleSignUp(params: { email: string; password: string; name: str
     const result = await registerStudent(params.name, params.email, params.password);
     if(!result) return null;
 
-    const signInResult = await signIn("credentials", { email: params.email, password: params.password, redirect: false });
+    const signInResult = await signIn("credentials", { email: params.email, password: params.password, redirect: false, type:"STUDENT" });
     if(!signInResult) return null;
     return signInResult;
 }
@@ -34,13 +34,8 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const result = await handleSignUp({ name: username, email: email, password: password });
-        if(!result) return null;
-
-        const signInResult = await signIn("credentials", { email: email, password: password, redirect: false });
-        if(!signInResult) return null;
-        if (result) {
-            route.push("/dashboard");
-        }
+        if(!result) {alert("Something went wrong, please signup again."); return null;}
+        if(result.ok) route.push('/verfying-by-admin');
     };
 
     return (

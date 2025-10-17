@@ -10,7 +10,7 @@ export default function Home() {
 
   useEffect(()=>{
       if(status === 'unauthenticated') router.push('/signin');
-      else if(session?.user.type === 'STUDENT' && !session?.user.isVerified) router.push('/verification-request');
+      else if(session?.user.type === 'STUDENT' && !session?.user.isVerified) router.push('/verifying-by-admin');
       else if(session?.user.type === 'ADMIN') router.push('/admin/dashboard');
       else if(session?.user.type === 'TEACHER') router.push('/teacher/dashboard');
   }, [session, router, status]);

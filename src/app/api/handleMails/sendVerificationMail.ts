@@ -48,3 +48,6 @@ export const sendVerificationLink = async(email: string)=>{
     };
     await transporter.sendMail(mailOptions);
 }
+
+//https://sta-pink.vercel.app/
+//http://localhost:3000/
