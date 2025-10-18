@@ -4,7 +4,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { signIn, useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,7 +25,7 @@ export default function LoginPage() {
     e.preventDefault()
     const res = await signIn("credentials", { email, password, type: "ADMIN", redirect: false })
     if (res?.ok) {
-      router.push("/admin/dashboard")
+      redirect('/admin/dashboard');
     } else {
       alert("Login failed")
     }

@@ -35,3 +35,58 @@ export const fetchAllTeachers = async() =>{
         return null;
     }
 }
+
+export const removeTeacher = async(id: string)=>{
+    try{
+        const removeTeacher = await prisma.teachers.delete({
+            where:{id}
+        });
+
+        if(!removeTeacher){
+            console.log("Teacher doesn't exist!!!")
+            return null;
+        }
+
+        return removeTeacher;
+    }catch(err){
+        console.log(err);
+        return null;
+    }
+}
+
+export const updateTeacherFields = async({name, subjects, email, department, id}:{
+    name: string,
+    subjects: string[],
+    email: string,
+    department: string,
+    id: string
+})=>{
+    try{
+        const removedTeacher = await prisma.teachers.delete({where:{id}});
+        if(!removedTeacher){
+            console.log("Teacher is not removed");
+            return null;
+        }
+
+        const updatedTeacher = await prisma.teachers.create({
+            data:{
+                name,
+                subjects,
+                email,
+                department,
+                type: "TEACHER",
+                isVerified: true,
+                verificationToken: ''
+            }
+        });
+        if(!updatedTeacher){
+            console.log("Error in updating teacher");
+            return null;
+        }
+
+        return updatedTeacher;
+    }catch(err){
+        console.log(err);
+        return null;
+    }
+}

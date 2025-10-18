@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { redirect, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { fetchAllTeachers, addTeacher } from '@/app/api/teacher_manager/teacher_manager';
+import { fetchAllTeachers, addTeacher, removeTeacher, updateTeacherFields } from '@/app/api/teacher_manager/teacher_manager';
 import { fetchUnverifiedStudents, verifyStudent, removeStudent } from '@/app/api/student_manager/student_manager';
 import { LogOut, PlusSquare, MinusIcon, Edit, Delete, UserCheck } from 'lucide-react';
 
@@ -46,32 +46,32 @@ export default function AdminDashboard() {
             if(!session.user.isVerified) router.push('/request-verification');
             else router.push('/student/dashboard');
         }
-        else if(session?.user.type === 'ADMIN') router.push('/admin/dashboard');
+        else if(session?.user.type === 'TEACHER') router.push('/teacher/dashboard');
     }, [session, router, status]);
 	
 	//Fetch Teacher
     useEffect(()=>{
         const fetchAllTeachersFunc = async()=>{
             const fetchedTeachers = await fetchAllTeachers();
-            setTeachers(prevTeachers => [...prevTeachers, ...fetchedTeachers!.map(ele=>({
+            setTeachers(fetchedTeachers!.map(ele=>({
                 name: ele.name, email: ele.email, subject: ele.subjects, department:ele.department, id: ele.id
-            }))]);
+            })));
         }
 
-        fetchAllTeachersFunc()
-    }, []);
+        fetchAllTeachersFunc();
+    },[]);
 
 	//Fetch Student
 	useEffect(()=>{
 		const fetchUnverifiedStudentsFunc = async()=>{
 			const fetchedStudents = await fetchUnverifiedStudents();
-			setStudents(prevItems=> [...prevItems, ...fetchedStudents!.map(student => ({
+			setStudents(fetchedStudents!.map(student => ({
 				name: student.name, email: student.email, approved: false, id: student.id
-			}))])
+			})));
 		}
 
 		fetchUnverifiedStudentsFunc();
-	}, [])
+	},[])
 
     // Teacher functions
     const handleTeacherSearch = (e: React.ChangeEvent<HTMLInputElement>) => setTeacherSearch(e.target.value);
@@ -83,6 +83,7 @@ export default function AdminDashboard() {
     };
     const openEditTeacher = (t: Teacher) => {
         setTeacherForm({ name: t.name, department: t.department, email: t.email });
+		setInputSubjectField(t.subject);
         setEditingTeacherId(t.id);
         setTeacherModalOpen(true);
     };
@@ -90,7 +91,15 @@ export default function AdminDashboard() {
     const handleTeacherFormSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
         if (editingTeacherId !== null) {
-            setTeachers(teachers.map(t => t.id === editingTeacherId ? { ...t, name: teacherForm.name, email: teacherForm.email, department: teacherForm.department, subject: inputSubjectField } : t));
+			const updatedTeacher = await updateTeacherFields({name: teacherForm.name, email: teacherForm.email, subjects: inputSubjectField, department: teacherForm.department, id: editingTeacherId});
+			if(!updatedTeacher){
+				alert("Error in updating teacher, please try later!");
+				setTeacherModalOpen(false);
+				setTeacherForm({ name: '', department: '', email: '' });
+				return;
+			}
+			setTeachers(teachers.filter((teacher) => teacher.id!==editingTeacherId));
+			setTeachers(prevItem => [...prevItem, {id: updatedTeacher.id, email: updatedTeacher.email, subject: updatedTeacher.subjects, department: updatedTeacher.department, name: updatedTeacher.name}]);
         } else {
             const newTeacher = await addTeacher({name: teacherForm.name, email: teacherForm.email, department: teacherForm.department, subjects: inputSubjectField})
             setTeachers([...teachers, { id:newTeacher!.id , name: teacherForm.name, email: teacherForm.email, department: teacherForm.department, subject: inputSubjectField}]);
@@ -102,9 +111,10 @@ export default function AdminDashboard() {
     // Expandable row state
     const [expandedTeacher, setExpandedTeacher] = useState<string | null>(null);
     const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
-    const handleDeleteTeacher = (id: string) => {
+    const handleDeleteTeacher = async(id: string) => {
         if (window.confirm('Are you sure you want to delete this teacher?')) {
-            setTeachers(teachers.filter(t => t.id !== id));
+			const removedTeacher = await removeTeacher(id);
+            setTeachers(teachers.filter(t => t.id !== removedTeacher?.id));
         }
     };
 
@@ -156,7 +166,7 @@ export default function AdminDashboard() {
 			<div className='flex flex-row justify-between items-center border-b border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 shadow-md'>
 				<div></div>
 				<h1 className='text-3xl font-bold text-center p-6 text-white'>Admin Dashboard</h1>
-				<LogOut className='m-4 mr-8 hover:bg-gray-700 rounded cursor-pointer transition-colors text-gray-300' onClick={()=>{ signOut(); redirect('/') }}></LogOut>
+				<LogOut className='m-4 mr-8 hover:bg-gray-700 rounded cursor-pointer transition-colors text-gray-300' onClick={async()=>{ await signOut(); router.push('/signin') }}></LogOut>
 			</div>
 			
 			<div className="flex flex-1 items-start justify-center">
@@ -204,8 +214,8 @@ export default function AdminDashboard() {
 											<td className="px-2 py-3 font-medium">{t.name}</td>
 											<td className="px-2 py-3 text-gray-300">{t.department}</td>
 											<td className="px-2 py-3 text-center" onClick={e => e.stopPropagation()}>
-												<button className="text-blue-400 hover:text-blue-300 mr-3 font-medium transition-colors" onClick={() => openEditTeacher(t)}><Edit/></button>
-												<button className="text-red-400 hover:text-red-300 font-medium transition-colors" onClick={() => handleDeleteTeacher(t.id)}><Delete/> </button>
+												<button className="text-blue-400 hover:text-blue-300 mr-3 font-medium transition-colors" onClick={() => openEditTeacher(t)}><Edit className='cursor-pointer'/></button>
+												<button className="text-red-400 hover:text-red-300 font-medium transition-colors" onClick={() => handleDeleteTeacher(t.id)}><Delete className='cursor-pointer'/> </button>
 											</td>
 										</tr>,
 										expandedTeacher === t.id && (
@@ -293,8 +303,8 @@ export default function AdminDashboard() {
 											<td className="px-2 py-3 text-center" onClick={e => e.stopPropagation()}>
 												{!s.approved ? (
 													<>
-														<button className="text-emerald-400 hover:text-emerald-300 mr-3 font-medium transition-colors" onClick={() => openStudentActionModal(s, 'approve')}> <UserCheck/> </button>
-														<button className="text-red-400 hover:text-red-300 font-medium transition-colors" onClick={() => openStudentActionModal(s, 'remove')}> <Delete/> </button>
+														<button className="text-emerald-400 hover:text-emerald-300 mr-3 font-medium transition-colors" onClick={() => openStudentActionModal(s, 'approve')}> <UserCheck className='cursor-pointer'/> </button>
+														<button className="text-red-400 hover:text-red-300 font-medium transition-colors" onClick={() => openStudentActionModal(s, 'remove')}> <Delete className='cursor-pointer'/> </button>
 													</>
 												) : (
 													<button className="text-red-400 hover:text-red-300 font-medium transition-colors" onClick={() => openStudentActionModal(s, 'remove')}>Remove</button>

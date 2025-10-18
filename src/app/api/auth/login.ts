@@ -21,24 +21,27 @@ export const loginStudent = async(data :{ email: string, password: string })=>{
 }
 
 export const loginAdmin = async(data :{ email: string, password: string })=>{
-    console.log(data);
-    const user = await prisma.admins.findUnique({
-        where:{
-            email: data.email
+    try{
+        const user = await prisma.admins.findUnique({
+            where:{
+                email: data.email
+            }
+        });
+
+        console.log(user);
+
+        if(!user) {
+            console.error("USER NOT FOUND !!!!");
+            return
         }
-    });
 
-    if(!user) {
-        console.error("USER NOT FOUND !!!!");
-        return
+        const isPasswordValid = await bcrypt.compare(data.password, user.password);
+        if(!isPasswordValid) return null;
+
+        return user;
+    }catch(err){
+        console.log(err);
     }
-
-    console.log(user);
-
-    const isPasswordValid = await bcrypt.compare(data.password, user.password);
-    if(!isPasswordValid) return null;
-
-    return user;
 }
 
 export const loginTeacher = async(token: string)=>{
