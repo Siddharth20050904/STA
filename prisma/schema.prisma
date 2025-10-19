@@ -46,10 +46,20 @@ enum Role {
 
 
 model Appointments{
+  id String @id @default(uuid())
   teacher Teachers @relation(fields: [teacherId], references: [id])
   student Students @relation(fields: [studentId], references: [id])
   teacherId String @unique
   studentId String @unique
   subject String
   time DateTime
+  approval Boolean @default(false)
+  status MeetingStatus @default(upcoming)
+  message String @default("")
+}
+
+enum MeetingStatus {
+  completed
+  upcoming
+  cancelled
 }

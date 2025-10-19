@@ -32,3 +32,19 @@ export const addAppointment = async({teacherId, studentId, time, subject} :{
         return null
     }
 }
+
+export const fetchAppointments = async(studentId: string)=>{
+    try{
+        const appointments = await prisma.appointments.findMany({
+            where:{
+                studentId
+            },
+            include:{
+                teacher: true
+            }
+        });
+        return appointments;
+    }catch(err){
+        console.log(err);
+    }
+}

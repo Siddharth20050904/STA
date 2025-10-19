@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { fetchAllTeachers } from "@/app/api/teacher_manager/teacher_manager";
-import { addAppointment } from "@/app/api/appointment_manager/appointment_manager";
+import { addAppointment, fetchAppointments } from "@/app/api/appointment_manager/appointment_manager";
 
 type Appointment = {
     id: string;
@@ -26,7 +26,6 @@ export default function StudentDashboard() {
     const router = useRouter();
     const {data: session, status} = useSession();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
-    console.log(status);
 
     // Left panel: interactive appointment list (search/filter/expand/add)
     const [search, setSearch] = useState("");
@@ -87,6 +86,27 @@ export default function StudentDashboard() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Fetch All Meetings from This student
+    useEffect(()=>{
+      if (status !== "authenticated" || !session?.user?.id) return;
+      const fetchAllAppointments = async()=>{
+        const fetchedAppointments = await fetchAppointments(session.user.id);
+        if(fetchedAppointments)
+          setAppointments(
+            fetchedAppointments.map((appointment) => ({
+              id: appointment.id,
+              teacher: appointment.teacher.name,
+              subject: appointment.subject,
+              date: new Date(appointment.time).toLocaleDateString(),
+              time: new Date(appointment.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              message: appointment.message,
+              status: appointment.status,
+            }))
+          );
+      }
+      fetchAllAppointments();
+    }, [session, status]);
+
     const openAddModal = () => {
         setForm({ teacher: "", subject: "", date: "", time: "", message: "" });
         setTeacherSearch("");
@@ -114,10 +134,14 @@ export default function StudentDashboard() {
         const combinedTimeString = `${form.date}T${form.time}:00`;
         const combinedTime = new Date(combinedTimeString).toISOString();
 
-        await addAppointment({teacherId: form.teacher, studentId: session!.user.id, time: combinedTime, subject: form.subject});
+        const addedAppointment = await addAppointment({teacherId: form.teacher, studentId: session!.user.id, time: combinedTime, subject: form.subject});
+        if(!addedAppointment){
+          alert("Error in Adding Appointment");
+          return;
+        }
         setAppointments([
             ...appointments,
-            { id: Date.now().toString(), teacher: form.teacher, subject: form.subject, date: form.date, time: form.time, message: form.message, status: "upcoming" },
+            { id: addedAppointment.id, teacher: form.teacher, subject: form.subject, date: form.date, time: form.time, message: form.message, status: "upcoming" },
         ]);
         setModalOpen(false);
         setForm({ teacher: "", subject: "", date: "", time: "", message: "" });
