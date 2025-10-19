@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import StudentsNavbar from "@/app/components/students_navbar";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -54,7 +53,6 @@ export default function TeacherDashboard() {
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 text-gray-100 flex flex-col">
-			<StudentsNavbar />
 			
 			{/* Header */}
 			<h1 className="text-3xl font-bold text-center p-6 bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700 text-white shadow-md">
