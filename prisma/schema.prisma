@@ -14,6 +14,7 @@ model Students {
   type       Role
   password   String
   isVerified Boolean @default(false)
+  appointments Appointments[]
 }
 
 model Teachers {
@@ -25,6 +26,7 @@ model Teachers {
   department        String
   subjects          String[]
   verificationToken String
+  appointments Appointments[]
 }
 
 model Admins {
@@ -40,4 +42,14 @@ enum Role {
   STUDENT
   TEACHER
   ADMIN
+}
+
+
+model Appointments{
+  teacher Teachers @relation(fields: [teacherId], references: [id])
+  student Students @relation(fields: [studentId], references: [id])
+  teacherId String @unique
+  studentId String @unique
+  subject String
+  time DateTime
 }
