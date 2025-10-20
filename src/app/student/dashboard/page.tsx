@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { fetchAllTeachers } from "@/app/api/teacher_manager/teacher_manager";
 import { addAppointment, fetchAppointments } from "@/app/api/appointment_manager/appointment_manager";
+import { BookCheck, Clock1 } from "lucide-react";
 
 type Appointment = {
     id: string;
@@ -13,6 +14,7 @@ type Appointment = {
     time: string;
     message?: string;
     status: "upcoming" | "completed" | "cancelled";
+    approvalStatus: boolean
 };
 
 type Teacher = {
@@ -101,6 +103,7 @@ export default function StudentDashboard() {
               time: new Date(appointment.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               message: appointment.message,
               status: appointment.status,
+              approvalStatus: appointment.approval
             }))
           );
       }
@@ -141,7 +144,15 @@ export default function StudentDashboard() {
         }
         setAppointments([
             ...appointments,
-            { id: addedAppointment.id, teacher: form.teacher, subject: form.subject, date: form.date, time: form.time, message: form.message, status: "upcoming" },
+            { id: addedAppointment.id, 
+              teacher: addedAppointment.teacher.name, 
+              subject: addedAppointment.subject, 
+              date: form.date, 
+              time: form.time, 
+              message: addedAppointment.message, 
+              status: "upcoming",
+              approvalStatus: addedAppointment.approval
+            }
         ]);
         setModalOpen(false);
         setForm({ teacher: "", subject: "", date: "", time: "", message: "" });
@@ -211,6 +222,7 @@ export default function StudentDashboard() {
                     <th className="px-2 py-2 text-left text-gray-100 font-semibold">Date</th>
                     <th className="px-2 py-2 text-left text-gray-100 font-semibold">Time</th>
                     <th className="px-2 py-2 text-center text-gray-100 font-semibold">Status</th>
+                    <th className="px-2 py-2 text-center text-gray-100 font-semibold">Approval Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -233,10 +245,11 @@ export default function StudentDashboard() {
                           <td className="px-2 py-2 text-gray-400 text-sm">{a.date}</td>
                           <td className="px-2 py-2 text-gray-400 text-sm">{a.time}</td>
                           <td className="px-2 py-2 text-center capitalize text-gray-100">{a.status}</td>
+                          <td title={a.approvalStatus? 'Approved': "Pending"} className={`flex justify-center px-2 py-2 text-center capitalize ${a.approvalStatus ? 'text-green-300': 'text-yellow-300'}`}>{a.approvalStatus? (<BookCheck/>):(<Clock1/>)}</td>
                         </tr>
                         {expanded === a.id && (
                           <tr className="bg-gray-700/30 border-t border-gray-700">
-                            <td colSpan={5} className="text-left px-6 py-4">
+                            <td colSpan={6} className="text-left px-6 py-4">
                               <div className="text-gray-100">
                                 <span className="font-semibold">Teacher:</span> {a.teacher}
                               </div>

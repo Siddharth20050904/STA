@@ -23,6 +23,9 @@ export const addAppointment = async({teacherId, studentId, time, subject} :{
                         id: studentId
                     }
                 }
+            },
+            include:{
+                teacher: true
             }
         });
 
