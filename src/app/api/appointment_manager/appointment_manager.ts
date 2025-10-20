@@ -2,7 +2,9 @@
 import { prisma } from "@/lib/prisma";
 import { DateTime } from "next-auth/providers/kakao";
 
-export const addAppointment = async({teacherId, studentId, time, subject} :{
+export const addAppointment = async({teacherId, studentId, time, subject, studentName, teacherName} :{
+    studentName: string,
+    teacherName: string,
     teacherId: string,
     studentId: string,
     time: DateTime,
@@ -13,6 +15,8 @@ export const addAppointment = async({teacherId, studentId, time, subject} :{
             data:{
                 time: time,
                 subject,
+                studentName,
+                teacherName,
                 teacher : {
                     connect:{
                         id: teacherId
@@ -49,5 +53,23 @@ export const fetchAppointments = async(studentId: string)=>{
         return appointments;
     }catch(err){
         console.log(err);
+    }
+}
+
+export const fetchAppointmentsByTeacher = async(teacherId: string)=>{
+    try{
+        const appointments = await prisma.appointments.findMany({
+            where:{
+                teacherId
+            },
+            include:{
+                student: true
+            }
+        });
+
+        return appointments;
+    }catch(err){
+        console.log(err);
+        return null;
     }
 }

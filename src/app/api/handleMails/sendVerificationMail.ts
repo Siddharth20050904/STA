@@ -24,7 +24,7 @@ export const sendVerificationLink = async(email: string)=>{
         pass: process.env.EMAIL_PASS,
         },
     });
-
+    //TODO: Change the URL link
     // Email content
     const mailOptions = {
         from: `"Verification Team" <${process.env.EMAIL_USER}>`,
@@ -35,7 +35,7 @@ export const sendVerificationLink = async(email: string)=>{
             <h2>Hello ${teacherWithToken.name},</h2>
             <p>Thank you for signing up as a teacher! Please verify your email address by clicking the link below:</p>
             <p>
-            <a href="https://sta-pink.vercel.app/verify?token=${teacherWithToken.verificationToken}" 
+            <a href="http://localhost:3000/verify?token=${teacherWithToken.verificationToken}" 
                 style="background-color: #4F46E5; color: #fff; padding: 10px 16px; text-decoration: none; border-radius: 6px;">
                 Verify Email
             </a>

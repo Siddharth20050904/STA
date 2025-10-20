@@ -49,6 +49,8 @@ model Appointments{
   id String @id @default(uuid())
   teacher Teachers @relation(fields: [teacherId], references: [id])
   student Students @relation(fields: [studentId], references: [id])
+  teacherName String
+  studentName String
   teacherId String @unique
   studentId String @unique
   subject String

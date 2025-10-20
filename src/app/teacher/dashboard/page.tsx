@@ -1,28 +1,27 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { BookCheck, Clock1, LogOut } from "lucide-react";
+import { fetchAppointmentsByTeacher } from "@/app/api/appointment_manager/appointment_manager";
 
 type Appointment = {
-	id: number;
+	id: string;
 	student: string;
 	subject: string;
 	date: string;
 	time: string;
 	message?: string;
 	status: "pending" | "upcoming" | "completed" | "cancelled";
+	approvalStatus: boolean
 };
 
-const initialAppointments: Appointment[] = [
-	{ id: 1, student: "Alice Brown", subject: "Calculus", date: "2025-10-05", time: "10:00", message: "Need help with integrals", status: "pending" },
-	{ id: 2, student: "Bob Green", subject: "Physics", date: "2025-09-28", time: "09:00", message: "Discuss lab report", status: "completed" },
-	{ id: 3, student: "Charlie Blue", subject: "Chemistry", date: "2025-10-10", time: "11:30", message: "Clarify titration procedure", status: "upcoming" },
-];
+const initialAppointments: Appointment[] = [];
 
 export default function TeacherDashboard() {
 	const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
 	const [search, setSearch] = useState("");
-	const [expanded, setExpanded] = useState<number | null>(null);
+	const [expanded, setExpanded] = useState<string | null>(null);
 
 	const { data: session, status } = useSession();
 	const router = useRouter();
@@ -35,6 +34,27 @@ export default function TeacherDashboard() {
 		} else if (session?.user.type === "ADMIN") router.push("/admin/dashboard");
 	}, [session, router, status]);
 
+	// Fetch the Appointments
+	useEffect(()=>{
+		if (status !== "authenticated" || !session?.user?.id) return;
+		const fetchAppointmentFunc = async()=>{
+			const fetchedAppointments = await fetchAppointmentsByTeacher(session.user.id);
+			if(!fetchedAppointments) return
+			setAppointments(fetchedAppointments.map((appointment)=>({
+				id: appointment.id,
+				student: appointment.studentName,
+				subject: appointment.subject,
+				date: new Date(appointment.time).toLocaleDateString(),
+				time: new Date(appointment.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+				message: appointment.message,
+				status: appointment.status,
+				approvalStatus: appointment.approval
+			})));
+		}
+
+		fetchAppointmentFunc();
+	},[session, status]);
+
 	const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value);
 
 	const filteredAppointments = appointments.filter(
@@ -43,20 +63,22 @@ export default function TeacherDashboard() {
 			(a.subject || "").toLowerCase().includes(search.toLowerCase())
 	);
 
-	const updateStatus = (id: number, status: Appointment["status"]) => {
+	const updateStatus = (id: string, status: Appointment["status"]) => {
 		setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
 	};
 
-	const approve = (id: number) => updateStatus(id, "upcoming");
-	const cancel = (id: number) => updateStatus(id, "cancelled");
-	const markComplete = (id: number) => updateStatus(id, "completed");
+	const approve = (id: string) => updateStatus(id, "upcoming");
+	const cancel = (id: string) => updateStatus(id, "cancelled");
+	const markComplete = (id: string) => updateStatus(id, "completed");
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 text-gray-100 flex flex-col">
 			
 			{/* Header */}
-			<h1 className="text-3xl font-bold text-center p-6 bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700 text-white shadow-md">
+			<h1 className="flex flex-row justify-between items-center text-3xl font-bold text-center p-6 bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700 text-white shadow-md">
+				<div></div>
 				Teacher Dashboard
+				<LogOut className='m-4 mr-8 hover:bg-gray-700 rounded cursor-pointer transition-colors text-gray-300' onClick={async()=>{ await signOut(); router.push('/signin') }}></LogOut>
 			</h1>
 
 			<div className="flex flex-1 justify-center items-start">
@@ -92,7 +114,7 @@ export default function TeacherDashboard() {
 									</tr>
 								</thead>
 								<tbody>
-									{filteredAppointments.filter((a) => a.status === "pending").length === 0 ? (
+									{filteredAppointments.filter((a) => !a.approvalStatus).length === 0 ? (
 										<tr>
 											<td colSpan={5} className="py-6 text-gray-500 text-center">
 												No pending requests.
@@ -100,7 +122,7 @@ export default function TeacherDashboard() {
 										</tr>
 									) : (
 										filteredAppointments
-											.filter((a) => a.status === "pending")
+											.filter((a) => !a.approvalStatus)
 											.map((a, idx) => (
 												<React.Fragment key={a.id}>
 													<tr
@@ -113,9 +135,7 @@ export default function TeacherDashboard() {
 														<td className="px-2 py-3 text-gray-300">{a.subject}</td>
 														<td className="px-2 py-3 text-gray-400">{a.date}</td>
 														<td className="px-2 py-3 text-gray-400">{a.time}</td>
-														<td className="px-2 py-3 text-center capitalize text-yellow-400">
-															{a.status}
-														</td>
+														<td title={a.approvalStatus? 'Approved': "Pending"} className={`flex justify-center px-2 py-2 text-center capitalize ${a.approvalStatus ? 'text-green-300': 'text-yellow-300'}`}>{a.approvalStatus? (<BookCheck/>):(<Clock1/>)}</td>
 													</tr>
 													{expanded === a.id && (
 														<tr>

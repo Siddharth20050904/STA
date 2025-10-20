@@ -1,10 +1,10 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { fetchAllTeachers } from "@/app/api/teacher_manager/teacher_manager";
 import { addAppointment, fetchAppointments } from "@/app/api/appointment_manager/appointment_manager";
-import { BookCheck, Clock1 } from "lucide-react";
+import { BookCheck, Clock1, LogOut } from "lucide-react";
 
 type Appointment = {
     id: string;
@@ -36,7 +36,7 @@ export default function StudentDashboard() {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     // Add appointment modal state
     const [modalOpen, setModalOpen] = useState(false);
-    const [form, setForm] = useState<{ teacher: string; subject: string; date: string; time: string; message: string }>({ teacher: "", subject: "", date: "", time: "", message: "" });
+    const [form, setForm] = useState<{ teacher: string; teacherName:string; subject: string; date: string; time: string; message: string }>({ teacher: "", subject: "", date: "", time: "", message: "", teacherName: "" });
     
     // Teacher filter state
     const [teacherSearch, setTeacherSearch] = useState("");
@@ -111,7 +111,7 @@ export default function StudentDashboard() {
     }, [session, status]);
 
     const openAddModal = () => {
-        setForm({ teacher: "", subject: "", date: "", time: "", message: "" });
+        setForm({ teacher: "", subject: "", date: "", time: "", message: "", teacherName: "" });
         setTeacherSearch("");
         setModalOpen(true);
     };
@@ -127,7 +127,7 @@ export default function StudentDashboard() {
     };
     
     const selectTeacher = (teacherId: string, teacherName: string) => {
-        setForm({ ...form, teacher: teacherId });
+        setForm({ ...form, teacher: teacherId, teacherName: teacherName });
         setTeacherSearch(teacherName);
         setShowDropdown(false);
     };
@@ -137,7 +137,7 @@ export default function StudentDashboard() {
         const combinedTimeString = `${form.date}T${form.time}:00`;
         const combinedTime = new Date(combinedTimeString).toISOString();
 
-        const addedAppointment = await addAppointment({teacherId: form.teacher, studentId: session!.user.id, time: combinedTime, subject: form.subject});
+        const addedAppointment = await addAppointment({teacherId: form.teacher, studentId: session!.user.id, time: combinedTime, subject: form.subject, studentName:session!.user.name, teacherName: form.teacherName});
         if(!addedAppointment){
           alert("Error in Adding Appointment");
           return;
@@ -155,14 +155,16 @@ export default function StudentDashboard() {
             }
         ]);
         setModalOpen(false);
-        setForm({ teacher: "", subject: "", date: "", time: "", message: "" });
+        setForm({ teacher: "", subject: "", date: "", time: "", message: "", teacherName: "" });
         setTeacherSearch("");
     };
 
    return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 flex flex-col text-gray-100">
-      <h1 className="text-3xl font-bold text-center p-4 bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
+      <h1 className="flex flex-row justify-between items-center text-3xl font-bold text-center p-4 bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
+        <div></div>
         Student Dashboard
+        <LogOut className='m-4 mr-8 hover:bg-gray-700 rounded cursor-pointer transition-colors text-gray-300' onClick={async()=>{ await signOut(); router.push('/signin') }}></LogOut>
       </h1>
       <div className="flex flex-1 items-start justify-center">
         <div className="flex flex-col md:flex-row gap-8 p-4 md:p-12 bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg w-full h-[calc(100vh-0.5rem)]">
