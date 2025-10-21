@@ -345,12 +345,12 @@ export default function StudentDashboard() {
             <h2 className="text-2xl font-semibold text-gray-100 mb-4">Appointment History</h2>
             <div className="flex-1 overflow-y-auto">
               <table className="w-full text-sm lg:text-base text-gray-200">
-                <thead className="border-b border-gray-700 bg-gray-800/60">
+                <thead className="border-b border-gray-700 bg-gray-800/60 teaxt-center">
                   <tr>
-                    <th className="px-2 py-3 text-left">Teacher</th>
-                    <th className="px-2 py-3 text-left">Subject</th>
-                    <th className="px-2 py-3 text-left">Date</th>
-                    <th className="px-2 py-3 text-left">Time</th>
+                    <th className="px-2 py-3">Teacher</th>
+                    <th className="px-2 py-3">Subject</th>
+                    <th className="px-2 py-3">Date</th>
+                    <th className="px-2 py-3">Approval Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -368,13 +368,21 @@ export default function StudentDashboard() {
                           <tr
                             className={`${
                               idx % 2 === 0 ? "bg-gray-800/60" : "bg-gray-700/50"
-                            } hover:bg-gray-600/60 transition cursor-pointer`}
+                            } hover:bg-gray-600/60 transition cursor-pointer text-center`}
                             onClick={() => setExpandedHistory(expandedHistory === a.id ? null : a.id)}
                           >
                             <td className="px-2 py-3 font-medium">{a.teacher}</td>
                             <td className="px-2 py-3 text-gray-300">{a.subject}</td>
                             <td className="px-2 py-3 text-gray-400">{a.date}</td>
-                            <td className="px-2 py-3 text-gray-400">{a.time}</td>
+                            <td className="flex justify-center px-2 py-3 text-gray-400" title={`${a.approvalStatus[0].toUpperCase() + a.approvalStatus.slice(1, a.approvalStatus.length)}`}>
+                              {a.approvalStatus === "accepted" ? (
+                                <BookCheck className="text-green-400"/>
+                              ) : a.approvalStatus === "rejected" ? (
+                                <Ban className="text-red-400"/>
+                              ) : (
+                                <Clock1 className="text-yellow-400"/>
+                              )}
+                            </td>
                           </tr>
                           {expandedHistory === a.id && (
                             <tr>
