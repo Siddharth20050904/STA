@@ -4,7 +4,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { fetchAllTeachers } from "@/app/api/teacher_manager/teacher_manager";
 import { addAppointment, fetchAppointments } from "@/app/api/appointment_manager/appointment_manager";
-import { BookCheck, Clock1, LogOut } from "lucide-react";
+import { Ban, BookCheck, Clock1, LogOut } from "lucide-react";
 
 type Appointment = {
     id: string;
@@ -14,7 +14,7 @@ type Appointment = {
     time: string;
     message?: string;
     status: "upcoming" | "completed" | "cancelled";
-    approvalStatus: boolean
+    approvalStatus: string
 };
 
 type Teacher = {
@@ -33,6 +33,8 @@ export default function StudentDashboard() {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState<"all" | "upcoming" | "completed" | "cancelled">("upcoming");
     const [expanded, setExpanded] = useState<string | null>(null);
+    const [expandedUpcoming, setExpandedUpcoming] = useState<string | null>(null);
+    const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     // Add appointment modal state
     const [modalOpen, setModalOpen] = useState(false);
@@ -103,7 +105,7 @@ export default function StudentDashboard() {
               time: new Date(appointment.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               message: appointment.message,
               status: appointment.status,
-              approvalStatus: appointment.approval
+              approvalStatus: appointment.approvalStatus
             }))
           );
       }
@@ -151,7 +153,7 @@ export default function StudentDashboard() {
               time: form.time, 
               message: addedAppointment.message, 
               status: "upcoming",
-              approvalStatus: addedAppointment.approval
+              approvalStatus: addedAppointment.approvalStatus
             }
         ]);
         setModalOpen(false);
@@ -216,21 +218,21 @@ export default function StudentDashboard() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <table className="w-full text-sm lg:text-lg">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="px-2 py-2 text-left text-gray-100 font-semibold">Teacher</th>
-                    <th className="px-2 py-2 text-left text-gray-100 font-semibold">Subject</th>
-                    <th className="px-2 py-2 text-left text-gray-100 font-semibold">Date</th>
-                    <th className="px-2 py-2 text-left text-gray-100 font-semibold">Time</th>
-                    <th className="px-2 py-2 text-center text-gray-100 font-semibold">Status</th>
-                    <th className="px-2 py-2 text-center text-gray-100 font-semibold">Approval Status</th>
+              <table className="w-full text-sm lg:text-base text-gray-200">
+                <thead className="border-b border-gray-700 bg-gray-800/60">
+                  <tr>
+                    <th className="px-2 py-3 text-left">Teacher</th>
+                    <th className="px-2 py-3 text-left">Subject</th>
+                    <th className="px-2 py-3 text-left">Date</th>
+                    <th className="px-2 py-3 text-left">Time</th>
+                    <th className="px-2 py-3 text-center">Status</th>
+                    <th className="px-2 py-3 text-center">Approval</th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayedAppointments.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-6 text-gray-400 text-center">
+                      <td colSpan={6} className="py-6 text-gray-500 text-center">
                         No appointments.
                       </td>
                     </tr>
@@ -238,40 +240,34 @@ export default function StudentDashboard() {
                     displayedAppointments.map((a, idx) => (
                       <React.Fragment key={a.id}>
                         <tr
-                          className={idx % 2 === 0 ? "bg-gray-800" : "bg-gray-700/50"}
-                          style={{ cursor: "pointer" }}
+                          className={`${
+                            idx % 2 === 0 ? "bg-gray-800/60" : "bg-gray-700/50"
+                          } hover:bg-gray-600/60 transition cursor-pointer`}
                           onClick={() => setExpanded(expanded === a.id ? null : a.id)}
                         >
-                          <td className="px-2 py-2 font-medium text-gray-100">{a.teacher}</td>
-                          <td className="px-2 py-2 text-gray-300">{a.subject}</td>
-                          <td className="px-2 py-2 text-gray-400 text-sm">{a.date}</td>
-                          <td className="px-2 py-2 text-gray-400 text-sm">{a.time}</td>
-                          <td className="px-2 py-2 text-center capitalize text-gray-100">{a.status}</td>
-                          <td title={a.approvalStatus? 'Approved': "Pending"} className={`flex justify-center px-2 py-2 text-center capitalize ${a.approvalStatus ? 'text-green-300': 'text-yellow-300'}`}>{a.approvalStatus? (<BookCheck/>):(<Clock1/>)}</td>
+                          <td className="px-2 py-3 font-medium">{a.teacher}</td>
+                          <td className="px-2 py-3 text-gray-300">{a.subject}</td>
+                          <td className="px-2 py-3 text-gray-400">{a.date}</td>
+                          <td className="px-2 py-3 text-gray-400">{a.time}</td>
+                          <td className="px-2 py-3 text-center capitalize">{a.status}</td>
+                          <td title={`${a.approvalStatus[0].toUpperCase() + a.approvalStatus.slice(1, a.approvalStatus.length)}`} className={`flex justify-center px-2 py-2 text-center capitalize ${a.approvalStatus === "accepted" ? 'text-green-400' : a.approvalStatus==="pending"? 'text-yellow-400': 'text-red-400'}`}>
+                            {a.approvalStatus === "accepted" ? (<BookCheck />) : a.approvalStatus === "pending" ? (<Clock1 />) : (<Ban/>)}
+                          </td>
                         </tr>
                         {expanded === a.id && (
-                          <tr className="bg-gray-700/30 border-t border-gray-700">
-                            <td colSpan={6} className="text-left px-6 py-4">
-                              <div className="text-gray-100">
-                                <span className="font-semibold">Teacher:</span> {a.teacher}
+                          <tr>
+                            <td colSpan={6} className="bg-gray-800/80 border-t border-gray-700 px-6 py-4 rounded-b-lg">
+                              <div className="space-y-1 text-gray-300">
+                                <div><span className="font-semibold text-white">Teacher:</span> {a.teacher}</div>
+                                <div><span className="font-semibold text-white">Subject:</span> {a.subject}</div>
+                                <div><span className="font-semibold text-white">Date:</span> {a.date}</div>
+                                <div><span className="font-semibold text-white">Time:</span> {a.time}</div>
+                                <div><span className="font-semibold text-white">Status:</span> <span className="capitalize">{a.status}</span></div>
+                                <div><span className="font-semibold text-white">Approval:</span> <span className={`capitalize ${a.approvalStatus === "accepted" ? 'text-green-400' : a.approvalStatus==="pending"? 'text-yellow-400': 'text-red-400'}`}>{a.approvalStatus}</span></div>
+                                {a.message && (
+                                  <div className="mt-2"><span className="font-semibold text-white">Message:</span> {a.message}</div>
+                                )}
                               </div>
-                              <div className="text-gray-100">
-                                <span className="font-semibold">Subject:</span> {a.subject}
-                              </div>
-                              <div className="text-gray-100">
-                                <span className="font-semibold">Date:</span> {a.date}
-                              </div>
-                              <div className="text-gray-100">
-                                <span className="font-semibold">Time:</span> {a.time}
-                              </div>
-                              <div className="text-gray-100">
-                                <span className="font-semibold">Status:</span> {a.status}
-                              </div>
-                              {a.message && (
-                                <div className="text-gray-100">
-                                  <span className="font-semibold">Message:</span> {a.message}
-                                </div>
-                              )}
                             </td>
                           </tr>
                         )}
@@ -284,19 +280,20 @@ export default function StudentDashboard() {
           </div>
           <div className="flex-1 h-full bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg sm:p-10 p-6 flex flex-col min-w-0 overflow-y-auto border border-gray-700">
             <h2 className="text-2xl font-semibold text-gray-100 mb-4">Upcoming Appointments</h2>
-            <div className="flex-1 mb-8">
-              <table className="w-full text-sm lg:text-lg text-center">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="py-2 text-gray-100 font-semibold">Teacher</th>
-                    <th className="py-2 text-gray-100 font-semibold">Date</th>
-                    <th className="py-2 text-gray-100 font-semibold">Time</th>
+            <div className="flex-1 mb-8 overflow-y-auto">
+              <table className="w-full text-sm text-center lg:text-base text-gray-200">
+                <thead className="border-b border-gray-700 bg-gray-800/60">
+                  <tr>
+                    <th className="px-2 py-3">Teacher</th>
+                    <th className="px-2 py-3">Subject</th>
+                    <th className="px-2 py-3">Date</th>
+                    <th className="px-2 py-3">Approval Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {appointments.filter((a) => a.status === "upcoming").length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="py-6 text-gray-400">
+                      <td colSpan={4} className="py-6 text-gray-500 text-center">
                         No upcoming appointments.
                       </td>
                     </tr>
@@ -304,42 +301,97 @@ export default function StudentDashboard() {
                     appointments
                       .filter((a) => a.status === "upcoming")
                       .map((a, idx) => (
-                        <tr key={a.id} className={idx % 2 === 0 ? "bg-gray-800" : "bg-gray-700/50"}>
-                          <td className="px-2 py-2 font-medium text-gray-100">{a.teacher}</td>
-                          <td className="px-2 py-2 text-gray-300">{a.date}</td>
-                          <td className="px-2 py-2 text-gray-300">{a.time}</td>
-                        </tr>
+                        <React.Fragment key={a.id}>
+                          <tr
+                            className={`${
+                              idx % 2 === 0 ? "bg-gray-800/60" : "bg-gray-700/50"
+                            } hover:bg-gray-600/60 transition cursor-pointer`}
+                            onClick={() => setExpandedUpcoming(expandedUpcoming === a.id ? null : a.id)}
+                          >
+                            <td className="px-2 py-3 font-medium">{a.teacher}</td>
+                            <td className="px-2 py-3 text-gray-300">{a.subject}</td>
+                            <td className="px-2 py-3 text-gray-400">{a.date}</td>
+                            <td className="flex justify-center px-2 py-3 text-gray-400" title={`${a.approvalStatus[0].toUpperCase() + a.approvalStatus.slice(1, a.approvalStatus.length)}`}>
+                              {a.approvalStatus === "accepted" ? (
+                                <BookCheck className="text-green-400"/>
+                              ) : a.approvalStatus === "rejected" ? (
+                                <Ban className="text-red-400"/>
+                              ) : (
+                                <Clock1 className="text-yellow-400"/>
+                              )}
+                            </td>
+                          </tr>
+                          {expandedUpcoming === a.id && (
+                            <tr>
+                              <td colSpan={4} className="bg-gray-800/80 border-t border-gray-700 px-6 py-4 rounded-b-lg text-left">
+                                <div className="space-y-1 text-gray-300">
+                                  <div><span className="font-semibold text-white">Teacher:</span> {a.teacher}</div>
+                                  <div><span className="font-semibold text-white">Subject:</span> {a.subject}</div>
+                                  <div><span className="font-semibold text-white">Date:</span> {a.date}</div>
+                                  <div><span className="font-semibold text-white">Time:</span> {a.time} </div>
+                                  {a.message && (
+                                    <div className="mt-2"><span className="font-semibold text-white">Message:</span> {a.message}</div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       ))
                   )}
                 </tbody>
               </table>
             </div>
             <h2 className="text-2xl font-semibold text-gray-100 mb-4">Appointment History</h2>
-            <div className="flex-1">
-              <table className="w-full text-sm lg:text-lg text-center">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="py-2 text-gray-100 font-semibold">Teacher</th>
-                    <th className="py-2 text-gray-100 font-semibold">Date</th>
-                    <th className="py-2 text-gray-100 font-semibold">Time</th>
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full text-sm lg:text-base text-gray-200">
+                <thead className="border-b border-gray-700 bg-gray-800/60">
+                  <tr>
+                    <th className="px-2 py-3 text-left">Teacher</th>
+                    <th className="px-2 py-3 text-left">Subject</th>
+                    <th className="px-2 py-3 text-left">Date</th>
+                    <th className="px-2 py-3 text-left">Time</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {appointments.filter((a) => a.status === "completed").length === 0 ? (
+                  {appointments.filter((a) => a.status === "completed" || a.status === "cancelled").length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="py-6 text-gray-400">
+                      <td colSpan={4} className="py-6 text-gray-500 text-center">
                         No past appointments.
                       </td>
                     </tr>
                   ) : (
                     appointments
-                      .filter((a) => a.status === "completed")
+                      .filter((a) => a.status === "completed" || a.status === "cancelled")
                       .map((a, idx) => (
-                        <tr key={a.id} className={idx % 2 === 0 ? "bg-gray-800" : "bg-gray-700/50"}>
-                          <td className="px-2 py-2 font-medium text-gray-100">{a.teacher}</td>
-                          <td className="px-2 py-2 text-gray-300">{a.date}</td>
-                          <td className="px-2 py-2 text-gray-300">{a.time}</td>
-                        </tr>
+                        <React.Fragment key={a.id}>
+                          <tr
+                            className={`${
+                              idx % 2 === 0 ? "bg-gray-800/60" : "bg-gray-700/50"
+                            } hover:bg-gray-600/60 transition cursor-pointer`}
+                            onClick={() => setExpandedHistory(expandedHistory === a.id ? null : a.id)}
+                          >
+                            <td className="px-2 py-3 font-medium">{a.teacher}</td>
+                            <td className="px-2 py-3 text-gray-300">{a.subject}</td>
+                            <td className="px-2 py-3 text-gray-400">{a.date}</td>
+                            <td className="px-2 py-3 text-gray-400">{a.time}</td>
+                          </tr>
+                          {expandedHistory === a.id && (
+                            <tr>
+                              <td colSpan={4} className="bg-gray-800/80 border-t border-gray-700 px-6 py-4 rounded-b-lg">
+                                <div className="space-y-1 text-gray-300">
+                                  <div><span className="font-semibold text-white">Teacher:</span> {a.teacher}</div>
+                                  <div><span className="font-semibold text-white">Subject:</span> {a.subject}</div>
+                                  <div><span className="font-semibold text-white">Date:</span> {a.date}</div>
+                                  <div><span className="font-semibold text-white">Time:</span> {a.time}</div>
+                                  {a.message && (
+                                    <div className="mt-2"><span className="font-semibold text-white">Message:</span> {a.message}</div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       ))
                   )}
                 </tbody>

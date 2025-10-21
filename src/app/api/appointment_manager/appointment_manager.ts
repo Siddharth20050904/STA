@@ -11,6 +11,7 @@ export const addAppointment = async({teacherId, studentId, time, subject, studen
     subject: string,
 })=>{
     try{
+        console.log(teacherId);
         const appointment = await prisma.appointments.create({
             data:{
                 time: time,
@@ -71,5 +72,23 @@ export const fetchAppointmentsByTeacher = async(teacherId: string)=>{
     }catch(err){
         console.log(err);
         return null;
+    }
+}
+
+export const updateAppointmentApprovalStatus = async(appointmentId: string, stat: string)=>{
+    try{
+        const updatedAppointment = await prisma.appointments.update({
+            where:{
+                id: appointmentId
+            },
+            data:{
+                approvalStatus: stat === "accepted" ? 'accepted' : 'rejected',
+                status: stat==="rejected"?'cancelled':'upcoming'
+            }
+        });
+
+        return updatedAppointment;
+    }catch(err){
+        console.log(err);
     }
 }

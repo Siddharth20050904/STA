@@ -51,11 +51,11 @@ model Appointments{
   student Students @relation(fields: [studentId], references: [id])
   teacherName String
   studentName String
-  teacherId String @unique
-  studentId String @unique
+  teacherId String
+  studentId String
   subject String
   time DateTime
-  approval Boolean @default(false)
+  approvalStatus ApprovalStatus @default(pending)
   status MeetingStatus @default(upcoming)
   message String @default("")
 }
@@ -64,4 +64,10 @@ enum MeetingStatus {
   completed
   upcoming
   cancelled
+}
+
+enum ApprovalStatus {
+  accepted
+  rejected
+  pending
 }
