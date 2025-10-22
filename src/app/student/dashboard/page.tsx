@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { fetchAllTeachers } from "@/app/api/teacher_manager/teacher_manager";
-import { addAppointment, fetchAppointments } from "@/app/api/appointment_manager/appointment_manager";
+import { addAppointment, cancellAppointment, fetchAppointments } from "@/app/api/appointment_manager/appointment_manager";
 import { Ban, BookCheck, Clock1, LogOut } from "lucide-react";
 
 type Appointment = {
@@ -28,6 +28,7 @@ export default function StudentDashboard() {
     const router = useRouter();
     const {data: session, status} = useSession();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [submitting, setSubmitting] = useState<boolean>(false);
 
     // Left panel: interactive appointment list (search/filter/expand/add)
     const [search, setSearch] = useState("");
@@ -122,7 +123,7 @@ export default function StudentDashboard() {
         setTeacherSearch("");
         setShowDropdown(false);
     };
-    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm({ ...form, [e.target.name]: e.target.value });
+    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [e.target.name]: e.target.value });
     const handleTeacherSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTeacherSearch(e.target.value);
         setShowDropdown(true);
@@ -134,32 +135,55 @@ export default function StudentDashboard() {
         setShowDropdown(false);
     };
 
-    const handleFormSubmit = async(e: React.FormEvent) => {
+    const handleFormSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const combinedTimeString = `${form.date}T${form.time}:00`;
-        const combinedTime = new Date(combinedTimeString).toISOString();
-
-        const addedAppointment = await addAppointment({teacherId: form.teacher, studentId: session!.user.id, time: combinedTime, subject: form.subject, studentName:session!.user.name, teacherName: form.teacherName, createdAt: new Date().toISOString()});
-        if(!addedAppointment){
-          alert("Error in Adding Appointment");
+        if(submitting) return; // prevent duplicate submits
+        if(!(form.teacher && form.date && form.time && form.subject)){
+          alert("Please fill all the fields!");
           return;
         }
-        setAppointments([
-            ...appointments,
-            { id: addedAppointment.id, 
-              teacher: addedAppointment.teacher.name, 
-              subject: addedAppointment.subject, 
-              date: form.date, 
-              time: form.time, 
-              message: addedAppointment.message, 
-              status: "upcoming",
-              approvalStatus: addedAppointment.approvalStatus
-            }
-        ]);
-        setModalOpen(false);
-        setForm({ teacher: "", subject: "", date: "", time: "", message: "", teacherName: "" });
-        setTeacherSearch("");
+        setSubmitting(true);
+        try{
+          const combinedTimeString = `${form.date}T${form.time}:00`;
+          const combinedTime = new Date(combinedTimeString).toISOString();
+
+          const addedAppointment = await addAppointment({teacherId: form.teacher, studentId: session!.user.id, time: combinedTime, subject: form.subject, studentName:session!.user.name, teacherName: form.teacherName, createdAt: new Date().toISOString(), message: form.message});
+          if(!addedAppointment){
+            alert("Error in Adding Appointment");
+            return;
+          }
+          setAppointments(prev => ([
+              ...prev,
+              { id: addedAppointment.id, 
+                teacher: addedAppointment.teacher.name, 
+                subject: addedAppointment.subject, 
+                date: form.date, 
+                time: form.time, 
+                message: addedAppointment.message, 
+                status: "upcoming",
+                approvalStatus: addedAppointment.approvalStatus
+              }
+          ]));
+          setModalOpen(false);
+          setForm({ teacher: "", subject: "", date: "", time: "", message: "", teacherName: "" });
+          setTeacherSearch("");
+        } finally{
+          setSubmitting(false);
+        }
     };
+
+    const handleCancel = async(meetingId: string)=>{
+      const confirmation: boolean = confirm("Do you want to cancel this meeting ?");
+      if(!confirmation) return;
+      const cancelledAppointment = await cancellAppointment(meetingId);
+      if(cancelledAppointment){
+        setAppointments(prevItems => prevItems.map((appointment)=>
+          appointment.id===meetingId ? {...appointment, status:"cancelled"} : appointment
+        ));
+      }else{
+        alert("Error in cancelling appointment, Please try later!")
+      }
+    }
 
    return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 flex flex-col text-gray-100">
@@ -264,9 +288,19 @@ export default function StudentDashboard() {
                                 <div><span className="font-semibold text-white">Time:</span> {a.time}</div>
                                 <div><span className="font-semibold text-white">Status:</span> <span className="capitalize">{a.status}</span></div>
                                 <div><span className="font-semibold text-white">Approval:</span> <span className={`capitalize ${a.approvalStatus === "accepted" ? 'text-green-400' : a.approvalStatus==="pending"? 'text-yellow-400': 'text-red-400'}`}>{a.approvalStatus}</span></div>
-                                {a.message && (
-                                  <div className="mt-2"><span className="font-semibold text-white">Message:</span> {a.message}</div>
-                                )}
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1 text-md text-gray-300">
+                                    {a.message ? (
+                                      <>
+                                        <span className="font-semibold text-white mr-2">Message:</span>
+                                        <span>{a.message}</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-gray-400 italic">No message</span>
+                                    )}
+                                  </div>
+                                  <button className="bg-red-600 p-2 rounded text-sm mx-4 hover:bg-red-800" onClick={()=>handleCancel(a.id)}>Cancel</button>
+                                </div>
                               </div>
                             </td>
                           </tr>
@@ -388,10 +422,11 @@ export default function StudentDashboard() {
                             <tr>
                               <td colSpan={4} className="bg-gray-800/80 border-t border-gray-700 px-6 py-4 rounded-b-lg">
                                 <div className="space-y-1 text-gray-300">
-                                  <div><span className="font-semibold text-white">Teacher:</span> {a.teacher}</div>
-                                  <div><span className="font-semibold text-white">Subject:</span> {a.subject}</div>
-                                  <div><span className="font-semibold text-white">Date:</span> {a.date}</div>
-                                  <div><span className="font-semibold text-white">Time:</span> {a.time}</div>
+                                  <div className="capitalize"><span className="font-semibold text-white">Teacher:</span> {a.teacher}</div>
+                                  <div className="capitalize"><span className="font-semibold text-white">Subject:</span> {a.subject}</div>
+                                  <div className="capitalize"><span className="font-semibold text-white">Date:</span> {a.date}</div>
+                                  <div className="capitalize"><span className="font-semibold text-white">Time:</span> {a.time}</div>
+                                  <div className="capitalize"><span className="font-semibold text-white">Status:</span> {a.status}</div>
                                   {a.message && (
                                     <div className="mt-2"><span className="font-semibold text-white">Message:</span> {a.message}</div>
                                   )}
@@ -416,7 +451,7 @@ export default function StudentDashboard() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <h2 className="text-2xl font-semibold mb-4 text-center text-gray-100">Add Appointment</h2>
-                <div className="space-y-4">
+                <form className="space-y-4" onSubmit={handleFormSubmit}>
                   <div>
                     <label htmlFor="teacher" className="block text-sm font-medium text-gray-100 mb-1">
                       Teacher
@@ -447,19 +482,32 @@ export default function StudentDashboard() {
                       )}
                     </div>
                   </div>
-                  <div>
+                    <div>
                     <label htmlFor="subject" className="block text-sm font-medium text-gray-100">
                       Subject
                     </label>
-                    <input
+                    <select
                       id="subject"
                       name="subject"
                       value={form.subject}
                       onChange={handleFormChange}
-                      className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors"
+                      className="mt-1 p-2 w-full bg-gray-600 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors"
                       required
-                    />
-                  </div>
+                    >
+                      <option value="" disabled>
+                      {form.teacher ? "Select a subject" : "Select a teacher first or pick from all subjects"}
+                      </option>
+                      {( 
+                      form.teacher
+                        ? teachers.find((t) => t.id === form.teacher)?.subjects || []
+                        : Array.from(new Set(teachers.flatMap((t) => t.subjects || [])))
+                      ).map((subj) => (
+                      <option key={subj} value={subj}>
+                        {subj}
+                      </option>
+                      ))}
+                    </select>
+                    </div>
                   <div>
                     <label htmlFor="date" className="block text-sm font-medium text-gray-100">
                       Date
@@ -504,13 +552,14 @@ export default function StudentDashboard() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={handleFormSubmit}
-                      className="w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
+                      type="submit"
+                      className={`w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300 ${submitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      disabled={submitting}
                     >
-                      Add Appointment
+                      {submitting ? 'Adding...' : 'Add Appointment'}
                     </button>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           )}

@@ -5,14 +5,32 @@ import { useRouter } from "next/navigation";
 import { registerStudent } from "../api/auth/register";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import { ToastContainer, toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 async function handleSignUp(params: { email: string; password: string; name: string}) {
-    const result = await registerStudent(params.name, params.email, params.password);
-    if(!result) return null;
+  try {
+    const res = await registerStudent(params.name, params.email, params.password);
+    // registerStudent returns created user info on success
+    if (!res) {
+      toast.error('Unexpected response from auth');
+      return null;
+    }
 
+    // auto sign-in after successful registration
     const signInResult = await signIn("credentials", { email: params.email, password: params.password, redirect: false, type:"STUDENT" });
-    if(!signInResult) return null;
     return signInResult;
+  } catch (err: unknown) {
+    // show server-provided message (e.g., "User already exists")
+    function getMessage(e: unknown): string {
+      if (!e || typeof e !== 'object') return 'Registration failed'
+      const rec = e as Record<string, unknown>
+      if ('message' in rec && typeof rec.message === 'string') return rec.message
+      return 'Registration failed'
+    }
+    toast.error(getMessage(err))
+    return null;
+  }
 }
 
 export default function LoginPage() {
@@ -21,6 +39,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [submitting, setSubmitting] = useState<boolean>(false);
 
     const { data, status } = useSession();
     useEffect(() => {
@@ -34,9 +53,30 @@ export default function LoginPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const result = await handleSignUp({ name: username, email: email, password: password });
-        if(!result) {alert("Something went wrong, please signup again."); return null;}
-        if(result.ok) route.push('/verifying-by-admin');
+        
+        // Prevent duplicate submissions
+        if(submitting) return;
+        
+        // Validate all required fields
+        if(!username || !email || !password || !confirmPassword){
+          toast.error('Please fill in all fields');
+          return;
+        }
+        
+        // Validate password match
+        if(password !== confirmPassword){
+          toast.error('Passwords do not match');
+          return;
+        }
+        
+        setSubmitting(true);
+        
+        try {
+          const res = await handleSignUp({ name: username, email: email, password: password });
+          if(res) route.push('/verifying-by-admin');
+        } finally {
+          setSubmitting(false);
+        }
     };
 
   return (
@@ -53,8 +93,7 @@ export default function LoginPage() {
         <div className="max-w-md w-full p-6">
           <h1 className="text-3xl font-semibold mb-6 text-gray-100 text-center">Sign Up As Student</h1>
           <form
-            action="#"
-            method="POST"
+            onSubmit={handleSubmit}
             className="space-y-4 bg-gray-800/50 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700 text-gray-100"
           >
             <div>
@@ -66,6 +105,7 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 id="username"
                 name="username"
+                value={username}
                 className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
               />
             </div>
@@ -78,6 +118,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 id="email"
                 name="email"
+                value={email}
                 className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
               />
             </div>
@@ -90,6 +131,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 id="password"
                 name="password"
+                value={password}
                 className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
               />
             </div>
@@ -102,21 +144,24 @@ export default function LoginPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 id="confirm-password"
                 name="confirm-password"
+                value={confirmPassword}
                 className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
               />
             </div>
             <div>
               <button
-                onClick={handleSubmit}
                 type="submit"
-                className={`w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300 ${password !== confirmPassword ? "cursor-not-allowed opacity-60" : ""}`}
-                disabled={password !== confirmPassword}
+                className={`w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300 ${
+                  password !== confirmPassword || submitting ? "cursor-not-allowed opacity-60" : ""
+                }`}
+                disabled={password !== confirmPassword || submitting}
               >
-                Sign Up
+                {submitting ? 'Signing Up...' : 'Sign Up'}
               </button>
               {password !== confirmPassword && <p className="text-red-400 text-sm mt-2">Passwords do not match</p>}
             </div>
           </form>
+          <ToastContainer position="bottom-right" />
           <div className="mt-4 text-sm text-gray-400 text-center">
             <p>
               Already have an account?{" "}

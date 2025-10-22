@@ -1,7 +1,6 @@
 "use server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from 'bcrypt';
-import { error } from "console";
 // import { sendVerificationLink } from "../handleMails/sendVerificationMail";
 import { verifyToken } from "@/lib/jwt";
 
@@ -12,36 +11,27 @@ export const loginStudent = async(data :{ email: string, password: string })=>{
         }
     });
 
-    if(!user) throw error("USER NOT FOUND!!!")
+    if(!user) throw new Error("User not found");
 
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
-    if(!isPasswordValid) throw error("INVALID PASSWORD!!!!");
+    if(!isPasswordValid) throw new Error("Invalid password");
 
     return user;
 }
 
 export const loginAdmin = async(data :{ email: string, password: string })=>{
-    try{
-        const user = await prisma.admins.findUnique({
-            where:{
-                email: data.email
-            }
-        });
-
-        console.log(user);
-
-        if(!user) {
-            console.error("USER NOT FOUND !!!!");
-            return
+    const user = await prisma.admins.findUnique({
+        where:{
+            email: data.email
         }
+    });
 
-        const isPasswordValid = await bcrypt.compare(data.password, user.password);
-        if(!isPasswordValid) return null;
+    if(!user) throw new Error("User not found");
 
-        return user;
-    }catch(err){
-        console.log(err);
-    }
+    const isPasswordValid = await bcrypt.compare(data.password, user.password);
+    if(!isPasswordValid) throw new Error("Invalid password");
+
+    return user;
 }
 
 export const loginTeacher = async(token: string)=>{

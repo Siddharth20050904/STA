@@ -2,14 +2,15 @@
 import { prisma } from "@/lib/prisma";
 import { DateTime } from "next-auth/providers/kakao";
 
-export const addAppointment = async({teacherId, studentId, time, subject, studentName, teacherName, createdAt} :{
+export const addAppointment = async({teacherId, studentId, time, subject, studentName, teacherName, createdAt, message} :{
     studentName: string,
     teacherName: string,
     teacherId: string,
     studentId: string,
     time: DateTime,
     subject: string,
-    createdAt: DateTime
+    createdAt: DateTime,
+    message: string
 })=>{
     try{
         console.log(teacherId);
@@ -20,6 +21,7 @@ export const addAppointment = async({teacherId, studentId, time, subject, studen
                 studentName,
                 teacherName,
                 createdAt,
+                message,
                 teacher : {
                     connect:{
                         id: teacherId
@@ -108,6 +110,22 @@ export const updateAppointmentApprovalStatus = async(appointmentId: string, stat
         });
 
         return updatedAppointment;
+    }catch(err){
+        console.log(err);
+    }
+}
+
+export const cancellAppointment = async(appointmentId: string)=>{
+    try{
+        const cancelledAppointment = await prisma.appointments.update({
+            where:{
+                id: appointmentId,
+            },
+            data:{
+                status:"cancelled"
+            }
+        });
+        return cancelledAppointment;
     }catch(err){
         console.log(err);
     }
