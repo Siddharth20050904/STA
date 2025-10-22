@@ -36,7 +36,7 @@ export default function LoginPage() {
         e.preventDefault();
         const result = await handleSignUp({ name: username, email: email, password: password });
         if(!result) {alert("Something went wrong, please signup again."); return null;}
-        if(result.ok) route.push('/verfying-by-admin');
+        if(result.ok) route.push('/verifying-by-admin');
     };
 
   return (

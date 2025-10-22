@@ -58,6 +58,7 @@ model Appointments{
   approvalStatus ApprovalStatus @default(pending)
   status MeetingStatus @default(upcoming)
   message String @default("")
+  createdAt DateTime
 }
 
 enum MeetingStatus {

@@ -2,13 +2,14 @@
 import { prisma } from "@/lib/prisma";
 import { DateTime } from "next-auth/providers/kakao";
 
-export const addAppointment = async({teacherId, studentId, time, subject, studentName, teacherName} :{
+export const addAppointment = async({teacherId, studentId, time, subject, studentName, teacherName, createdAt} :{
     studentName: string,
     teacherName: string,
     teacherId: string,
     studentId: string,
     time: DateTime,
     subject: string,
+    createdAt: DateTime
 })=>{
     try{
         console.log(teacherId);
@@ -18,6 +19,7 @@ export const addAppointment = async({teacherId, studentId, time, subject, studen
                 subject,
                 studentName,
                 teacherName,
+                createdAt,
                 teacher : {
                     connect:{
                         id: teacherId
@@ -27,7 +29,7 @@ export const addAppointment = async({teacherId, studentId, time, subject, studen
                     connect:{
                         id: studentId
                     }
-                }
+                },
             },
             include:{
                 teacher: true
@@ -43,9 +45,18 @@ export const addAppointment = async({teacherId, studentId, time, subject, studen
 
 export const fetchAppointments = async(studentId: string)=>{
     try{
+        const today = new Date();
+        const oneMonthAgo = new Date(today);
+        const oneMonthAhead = new Date(today);
+        oneMonthAgo.setMonth(today.getMonth()-1);
+        oneMonthAhead.setMonth(today.getMonth()+1);
         const appointments = await prisma.appointments.findMany({
             where:{
-                studentId
+                studentId,
+                time:{
+                    gte: oneMonthAgo,
+                    lte: oneMonthAhead
+                }
             },
             include:{
                 teacher: true
@@ -59,9 +70,18 @@ export const fetchAppointments = async(studentId: string)=>{
 
 export const fetchAppointmentsByTeacher = async(teacherId: string)=>{
     try{
+        const today = new Date();
+        const oneMonthAgo = new Date(today);
+        const oneMonthAhead = new Date(today);
+        oneMonthAgo.setMonth(today.getMonth()-1);
+        oneMonthAhead.setMonth(today.getMonth()+1);
         const appointments = await prisma.appointments.findMany({
             where:{
-                teacherId
+                teacherId,
+                time:{
+                    gte: oneMonthAgo,
+                    lte: oneMonthAhead
+                }
             },
             include:{
                 student: true

@@ -139,7 +139,7 @@ export default function StudentDashboard() {
         const combinedTimeString = `${form.date}T${form.time}:00`;
         const combinedTime = new Date(combinedTimeString).toISOString();
 
-        const addedAppointment = await addAppointment({teacherId: form.teacher, studentId: session!.user.id, time: combinedTime, subject: form.subject, studentName:session!.user.name, teacherName: form.teacherName});
+        const addedAppointment = await addAppointment({teacherId: form.teacher, studentId: session!.user.id, time: combinedTime, subject: form.subject, studentName:session!.user.name, teacherName: form.teacherName, createdAt: new Date().toISOString()});
         if(!addedAppointment){
           alert("Error in Adding Appointment");
           return;
