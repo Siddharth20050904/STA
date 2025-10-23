@@ -1,6 +1,8 @@
 "use server";
 import { prisma } from "@/lib/prisma";
 import { DateTime } from "next-auth/providers/kakao";
+import { sendAppointmentRequest } from "../handleMails/sendAppointmentRequest";
+import { sendAppointmentStatus } from "../handleMails/sendAppointmentStatus";
 
 export const addAppointment = async({teacherId, studentId, time, subject, studentName, teacherName, createdAt, message} :{
     studentName: string,
@@ -37,6 +39,8 @@ export const addAppointment = async({teacherId, studentId, time, subject, studen
                 teacher: true
             }
         });
+
+        await sendAppointmentRequest(studentName, teacherId, time, subject, message);
 
         return appointment;
     }catch(err){
@@ -111,13 +115,16 @@ export const updateAppointmentApprovalStatus = async(appointmentId: string, stat
             },
             data:{
                 approvalStatus: stat === "accepted" ? 'accepted' : 'rejected',
-                status: stat==="rejected"?'cancelled':'upcoming'
+                status: stat==="rejected" ? 'cancelled' : 'upcoming'
             }
         });
+
+        await sendAppointmentStatus(updatedAppointment.studentId, updatedAppointment.subject, stat, updatedAppointment.teacherName, updatedAppointment.time.toISOString());
 
         return updatedAppointment;
     }catch(err){
         console.log(err);
+        return null;
     }
 }
 
