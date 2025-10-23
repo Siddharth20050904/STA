@@ -4,12 +4,15 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { signIn, useSession } from "next-auth/react"
-import { redirect, useRouter } from "next/navigation"
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [submitting, setSubmitting] = useState(false)
   const { data, status } = useSession()
 
   useEffect(() => {
@@ -23,11 +26,33 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const res = await signIn("credentials", { email, password, type: "ADMIN", redirect: false })
-    if (res?.ok) {
-      redirect('/admin/dashboard');
-    } else {
-      alert("Login failed")
+    if (submitting) return
+    if(!email || !password){
+      toast.error('Please fill in all fields')
+      return
+    }
+    setSubmitting(true)
+    try{
+      const res = await signIn('credentials', { email, password, type: 'ADMIN', redirect: false })
+      const result = res as { error?: string; ok?: boolean } | null
+      if (!result) {
+        toast.error('Unexpected response from auth')
+        return
+      }
+      if (result.error) {
+        // show server-provided message (e.g., "Invalid password")
+        toast.error(result.error)
+        return
+      }
+      if (result.ok) {
+        toast.success("Login Successfull")
+        router.push('/admin/dashboard')
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('An error occurred while signing in')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -44,8 +69,7 @@ export default function LoginPage() {
         <div className="max-w-md w-full p-6">
           <h1 className="text-3xl font-semibold mb-6 text-gray-100 text-center">Admin Sign In</h1>
           <form
-            action="#"
-            method="POST"
+            onSubmit={handleSubmit}
             className="space-y-4 bg-gray-800/50 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700 text-gray-100"
           >
             {/* Your form elements go here */}
@@ -75,14 +99,14 @@ export default function LoginPage() {
             </div>
             <div>
               <button
-                onClick={handleSubmit}
                 type="submit"
-                className={`w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300`}
+                disabled={submitting}
+                className={`w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300 ${submitting ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                Sign In
+                {submitting ? 'Signing In...' : 'Sign In'}
               </button>
             </div>
-            <div className="mt-6 text-center text-sm text-gray-400">
+            <div className="mt-6 text-center text-base text-gray-300">
               <div className="mb-2">Or login as:</div>
               <a
                 href="/signin"
@@ -98,6 +122,8 @@ export default function LoginPage() {
               </a>
             </div>
           </form>
+          {/* Toast */}
+          <ToastContainer position="top-right" />
         </div>
       </div>
     </div>

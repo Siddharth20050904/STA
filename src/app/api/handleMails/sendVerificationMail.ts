@@ -7,7 +7,7 @@ export const sendVerificationLink = async(email: string)=>{
     const teacher = await prisma.teachers.findUnique({
         where: {email},
     });
-    if(!teacher) return null;
+    if(!teacher) return "User Not Found!!!";
 
     const verificationToken = createToken({userId: teacher.id, email: teacher.email, role: teacher.type}, 10*60);
     const teacherWithToken = await prisma.teachers.update({
@@ -46,7 +46,8 @@ export const sendVerificationLink = async(email: string)=>{
         </div>
         `,
     };
-    await transporter.sendMail(mailOptions);
+    const res = await transporter.sendMail(mailOptions);
+    return res;
 }
 
 //https://sta-pink.vercel.app/

@@ -4,12 +4,15 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useSession } from "next-auth/react"
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import { useRouter } from "next/navigation"
 import { sendVerificationLink } from "@/app/api/handleMails/sendVerificationMail"
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
+  const [submitting, setSubmitting] = useState(false)
   const { data, status } = useSession()
 
   useEffect(() => {
@@ -23,11 +26,35 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await sendVerificationLink(email)
+    if (submitting) return
+    if(!email){
+      toast.error('Please enter your email')
+      return
+    }
+    setSubmitting(true)
+    try{
+      const result = await sendVerificationLink(email)
+      if (!result) {
+        toast.error('Unexpected response from auth')
+        return
+      }
+      if (typeof result === 'string') {
+        // show server-provided message (e.g., "Invalid password")
+        toast.error(result);
+        return
+      }
+      if (result.accepted) {
+        toast.success("Verification mail has been sent to your account!");
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('An error occurred while signing in')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
-    // component
     <div className="flex h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800">
       {/* Left Pane */}
       <div className="hidden lg:flex items-center justify-center flex-1 bg-gradient-to-br from-gray-900 to-gray-800">
@@ -40,8 +67,7 @@ export default function LoginPage() {
         <div className="max-w-md w-full p-6">
           <h1 className="text-3xl font-semibold mb-6 text-gray-100 text-center">Teacher Sign In</h1>
           <form
-            action="#"
-            method="POST"
+            onSubmit={handleSubmit}
             className="space-y-4 bg-gray-800/50 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700 text-gray-100"
           >
             {/* Your form elements go here */}
@@ -50,7 +76,8 @@ export default function LoginPage() {
                 Email
               </label>
               <input
-                type="text"
+                type="email"
+                value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 id="email"
                 name="email"
@@ -59,14 +86,14 @@ export default function LoginPage() {
             </div>
             <div>
               <button
-                onClick={handleSubmit}
                 type="submit"
-                className={`w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300`}
+                disabled={submitting}
+                className={`w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300 ${submitting ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                Sign In
+                {submitting ? 'Sending...' : 'Sign In'}
               </button>
             </div>
-            <div className="mt-6 text-center text-base text-gray-400">
+            <div className="mt-6 text-center text-base text-gray-300">
               <div className="mb-2">Or login as:</div>
               <a
                 href="/signin"
@@ -82,6 +109,8 @@ export default function LoginPage() {
               </a>
             </div>
           </form>
+          {/* Toast */}
+          <ToastContainer position="top-right" />
         </div>
       </div>
     </div>
