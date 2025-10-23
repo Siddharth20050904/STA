@@ -65,12 +65,6 @@ export default function TeacherDashboard() {
 			(a.subject || "").toLowerCase().includes(search.toLowerCase())
 	);
 
-	const updateStatus = (id: string, status: Appointment["status"]) => {
-		setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
-	};
-
-	const approve = (id: string) => updateStatus(id, "upcoming");
-	const cancel = (id: string) => updateStatus(id, "cancelled");
 	const markApproveStatus = async(id: string, stat: string) => {
 		const updatedAppointment = await updateAppointmentApprovalStatus(id, stat);
 		if(updatedAppointment){
@@ -135,7 +129,7 @@ export default function TeacherDashboard() {
 										</tr>
 									) : (
 										filteredAppointments
-											.filter((a) => a.approvalStatus==="pending")
+											.filter((a) => a.approvalStatus==="pending" && a.status!=="cancelled")
 											.map((a, idx) => (
 												<React.Fragment key={a.id}>
 													<tr
@@ -163,22 +157,6 @@ export default function TeacherDashboard() {
 																	)}
 																</div>
 																<div className="mt-4 flex gap-3">
-																	{a.status === "pending" && (
-																		<>
-																			<button
-																				onClick={() => approve(a.id)}
-																				className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-all"
-																			>
-																				Approve
-																			</button>
-																			<button
-																				onClick={() => cancel(a.id)}
-																				className="bg-red-600 hover:bg-red-500 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-all"
-																			>
-																				Cancel
-																			</button>
-																		</>
-																	)}
 																	{a.status === "upcoming" && (
 																		<div>
 																			<button
@@ -282,7 +260,7 @@ export default function TeacherDashboard() {
 									</tr>
 								</thead>
 								<tbody>
-									{appointments.filter((a) => a.status === "completed" || a.approvalStatus === "rejected")
+									{appointments.filter((a) => a.status === "completed" || a.approvalStatus === "rejected" || a.status==="cancelled")
 										.length === 0 ? (
 										<tr>
 											<td colSpan={5} className="py-6 text-gray-500 text-center">
@@ -291,7 +269,7 @@ export default function TeacherDashboard() {
 										</tr>
 									) : (
 										appointments
-											.filter((a) => a.status === "completed" || a.approvalStatus === "rejected")
+											.filter((a) => a.status === "completed" || a.approvalStatus === "rejected" || a.status==="cancelled")
 											.map((a, idx) => (
 												<React.Fragment key={a.id}>
 													<tr

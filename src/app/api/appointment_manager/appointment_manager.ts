@@ -62,6 +62,9 @@ export const fetchAppointments = async(studentId: string)=>{
             },
             include:{
                 teacher: true
+            },
+            orderBy:{
+                time: 'asc'
             }
         });
         return appointments;
@@ -87,6 +90,9 @@ export const fetchAppointmentsByTeacher = async(teacherId: string)=>{
             },
             include:{
                 student: true
+            },
+            orderBy:{
+                time: 'asc'
             }
         });
 
