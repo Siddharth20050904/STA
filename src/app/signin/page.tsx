@@ -3,15 +3,15 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import Image from "next/image"
-import { signIn, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { useRouter } from "next/navigation"
+import { sendVerificationLink } from "../api/handleMails/sendVerificationMailStudent"
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const { data, status } = useSession()
 
@@ -27,25 +27,24 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (submitting) return
-    if(!email || !password){
+    if(!email){
       toast.error('Please fill in all fields')
       return
     }
     setSubmitting(true)
     try{
-      const res = await signIn('credentials', { email, password, type: 'STUDENT', redirect: false })
-      const result = res as { error?: string; ok?: boolean } | null
+      const result = await sendVerificationLink(email)
       if (!result) {
         toast.error('Unexpected response from auth')
         return
       }
-      if (result.error) {
+      if (typeof result === 'string') {
         // show server-provided message (e.g., "Invalid password")
-        toast.error(result.error)
+        toast.error(result);
         return
       }
-      if (result.ok) {
-        router.push('/student/dashboard')
+      if (result.accepted) {
+        toast.success("Verification mail has been sent to your account!");
       }
     } catch (err) {
       console.error(err)
@@ -82,18 +81,6 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 id="email"
                 name="email"
-                className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-100">
-                Password
-              </label>
-              <input
-                type="password"
-                onChange={(e) => setPassword(e.target.value)}
-                id="password"
-                name="password"
                 className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
               />
             </div>

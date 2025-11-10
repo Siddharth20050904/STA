@@ -43,11 +43,7 @@ export const authOptions: AuthOptions = {
         let user;
         // console.log(credentials);
         if(credentials!.type==="STUDENT"){
-          if (!credentials?.email || !credentials.password) {
-            console.log("Missing credentials");
-            return null;
-          }
-          user = await loginStudent({email:credentials.email, password:credentials.password});
+          user = await loginStudent({token :credentials!.token});
         }else if(credentials!.type==="ADMIN"){
           if (!credentials?.email || !credentials.password) {
             console.log("Missing credentials");

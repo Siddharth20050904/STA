@@ -11,8 +11,8 @@ function VerifyContent() {
 
     useEffect(() => {
         const verifyTeacher = async () => {
-            const teacher = await signIn('credentials', { type: 'TEACHER', token, redirect: false });
-            if (teacher) router.push('/teacher/dashboard');
+            const teacher = await signIn('credentials', { type: 'STUDENT', token, redirect: false });
+            if (teacher) router.push('/student/dashboard');
         };
         verifyTeacher();
     }, [token, router]);
@@ -30,7 +30,7 @@ function VerifyContent() {
                     </div>
                 </div>
                 <footer className="mt-8 text-indigo-300 text-xs">
-                    © {new Date().getFullYear()} EduPortal — All Rights Reserved
+                    © {new Date().getFullYear()}
                 </footer>
             </div>
         </div>

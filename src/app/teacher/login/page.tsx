@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react"
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { useRouter } from "next/navigation"
-import { sendVerificationLink } from "@/app/api/handleMails/sendVerificationMail"
+import { sendVerificationLink } from "@/app/api/handleMails/sendVerificationMailTeacher"
 
 export default function LoginPage() {
   const router = useRouter()

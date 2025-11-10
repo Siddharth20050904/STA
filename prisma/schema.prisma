@@ -12,9 +12,9 @@ model Students {
   email      String  @unique
   id         String  @id @default(uuid())
   type       Role
-  password   String
   isVerified Boolean @default(false)
   appointments Appointments[]
+  verificationToken String
 }
 
 model Teachers {

@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { registerStudent } from "../api/auth/register";
 import { useSession } from "next-auth/react";
@@ -8,18 +7,15 @@ import Image from "next/image";
 import { ToastContainer, toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
-async function handleSignUp(params: { email: string; password: string; name: string}) {
+async function handleSignUp(params: { email: string; name: string}) {
   try {
-    const res = await registerStudent(params.name, params.email, params.password);
+    const res = await registerStudent(params.name, params.email);
     // registerStudent returns created user info on success
     if (!res) {
       toast.error('Unexpected response from auth');
       return null;
     }
-
-    // auto sign-in after successful registration
-    const signInResult = await signIn("credentials", { email: params.email, password: params.password, redirect: false, type:"STUDENT" });
-    return signInResult;
+    return res;
   } catch (err: unknown) {
     // show server-provided message (e.g., "User already exists")
     function getMessage(e: unknown): string {
@@ -37,8 +33,6 @@ export default function LoginPage() {
     const route = useRouter();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
     const [submitting, setSubmitting] = useState<boolean>(false);
 
     const { data, status } = useSession();
@@ -58,21 +52,15 @@ export default function LoginPage() {
         if(submitting) return;
         
         // Validate all required fields
-        if(!username || !email || !password || !confirmPassword){
+        if(!username || !email ){
           toast.error('Please fill in all fields');
-          return;
-        }
-        
-        // Validate password match
-        if(password !== confirmPassword){
-          toast.error('Passwords do not match');
           return;
         }
         
         setSubmitting(true);
         
         try {
-          const res = await handleSignUp({ name: username, email: email, password: password });
+          const res = await handleSignUp({ name: username, email: email});
           if(res) route.push('/verifying-by-admin');
         } finally {
           setSubmitting(false);
@@ -123,42 +111,15 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-100">
-                Password
-              </label>
-              <input
-                type="password"
-                onChange={(e) => setPassword(e.target.value)}
-                id="password"
-                name="password"
-                value={password}
-                className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
-              />
-            </div>
-            <div>
-              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-100">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                id="confirm-password"
-                name="confirm-password"
-                value={confirmPassword}
-                className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
-              />
-            </div>
-            <div>
               <button
                 type="submit"
                 className={`w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300 ${
-                  password !== confirmPassword || submitting ? "cursor-not-allowed opacity-60" : ""
+                  submitting ? "cursor-not-allowed opacity-60" : ""
                 }`}
-                disabled={password !== confirmPassword || submitting}
+                disabled={submitting}
               >
                 {submitting ? 'Signing Up...' : 'Sign Up'}
               </button>
-              {password !== confirmPassword && <p className="text-red-400 text-sm mt-2">Passwords do not match</p>}
             </div>
           </form>
           <ToastContainer position="bottom-right" />
