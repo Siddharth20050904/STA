@@ -3,10 +3,6 @@
         {
             "path":"/api/cron_jobs/delete_appointments",
             "schedule":"0 0 * */2 *"
-        },
-        {
-            "path":"/api/cron_jobs/test_mail",
-            "schedule":"*/3 * * * *"
         }
     ]
 }
