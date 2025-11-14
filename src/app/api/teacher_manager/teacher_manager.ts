@@ -67,7 +67,8 @@ export const updateTeacherFields = async({name, subjects, email, department, id}
             data:{
                 name,
                 subjects,
-                department
+                department,
+                email,
             }
         });
         

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from 'next/navigation';
 import { registerStudent } from "../api/auth/register";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -10,14 +10,12 @@ import 'react-toastify/dist/ReactToastify.css';
 async function handleSignUp(params: { email: string; name: string}) {
   try {
     const res = await registerStudent(params.name, params.email);
-    // registerStudent returns created user info on success
     if (!res) {
       toast.error('Unexpected response from auth');
       return null;
     }
     return res;
   } catch (err: unknown) {
-    // show server-provided message (e.g., "User already exists")
     function getMessage(e: unknown): string {
       if (!e || typeof e !== 'object') return 'Registration failed'
       const rec = e as Record<string, unknown>
@@ -29,7 +27,7 @@ async function handleSignUp(params: { email: string; name: string}) {
   }
 }
 
-export default function LoginPage() {
+export default function SignUpPage() {
     const route = useRouter();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
@@ -48,10 +46,8 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        // Prevent duplicate submissions
         if(submitting) return;
         
-        // Validate all required fields
         if(!username || !email ){
           toast.error('Please fill in all fields');
           return;
@@ -68,7 +64,6 @@ export default function LoginPage() {
     };
 
   return (
-    // component
     <div className="flex h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800">
       {/* Left Pane */}
       <div className="hidden lg:flex items-center justify-center flex-1 bg-gradient-to-br from-gray-900 to-gray-800">
@@ -82,7 +77,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-semibold mb-6 text-gray-100 text-center">Sign Up As Student</h1>
           <form
             onSubmit={handleSubmit}
-            className="space-y-4 bg-gray-800/50 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700 text-gray-100"
+            className="space-y-4 bg-gray-800/50 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-800 text-gray-100"
           >
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-100">
@@ -94,7 +89,7 @@ export default function LoginPage() {
                 id="username"
                 name="username"
                 value={username}
-                className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
+                className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-800 rounded-md text-gray-100 placeholder-gray-400 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50 transition-colors duration-300"
               />
             </div>
             <div>
@@ -107,13 +102,13 @@ export default function LoginPage() {
                 id="email"
                 name="email"
                 value={email}
-                className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
+                className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-800 rounded-md text-gray-100 placeholder-gray-400 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50 transition-colors duration-300"
               />
             </div>
             <div>
               <button
                 type="submit"
-                className={`w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300 ${
+                className={`w-full bg-green-500 text-gray-950 font-semibold p-2 rounded-md hover:bg-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50 transition-colors duration-300 ${
                   submitting ? "cursor-not-allowed opacity-60" : ""
                 }`}
                 disabled={submitting}
@@ -126,7 +121,7 @@ export default function LoginPage() {
           <div className="mt-4 text-sm text-gray-400 text-center">
             <p>
               Already have an account?{" "}
-              <a href="/signin" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+              <a href="/signin" className="text-green-400 hover:text-green-300 transition-colors">
                 Sign In here
               </a>
             </p>

@@ -6,10 +6,10 @@ import Image from "next/image"
 import { useSession } from "next-auth/react"
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import { useRouter } from "next/navigation"
+import { useRouter } from 'next/navigation'
 import { sendVerificationLink } from "../api/handleMails/sendVerificationMailStudent"
 
-export default function LoginPage() {
+export default function StudentLoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -39,7 +39,6 @@ export default function LoginPage() {
         return
       }
       if (typeof result === 'string') {
-        // show server-provided message (e.g., "Invalid password")
         toast.error(result);
         return
       }
@@ -55,7 +54,6 @@ export default function LoginPage() {
   }
 
   return (
-    // component
     <div className="flex h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800">
       {/* Left Pane */}
       <div className="hidden lg:flex items-center justify-center flex-1 bg-gradient-to-br from-gray-900 to-gray-800">
@@ -69,9 +67,8 @@ export default function LoginPage() {
           <h1 className="text-3xl font-semibold mb-6 text-gray-100 text-center">Student Sign In</h1>
           <form
             onSubmit={handleSubmit}
-            className="space-y-4 bg-gray-800/50 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700 text-gray-100"
+            className="space-y-4 bg-gray-800/50 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-800 text-gray-100"
           >
-            {/* Your form elements go here */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-100">
                 Email
@@ -81,14 +78,14 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 id="email"
                 name="email"
-                className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300"
+                className="mt-1 p-2 w-full bg-gray-700/50 border border-gray-800 rounded-md text-gray-100 placeholder-gray-400 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50 transition-colors duration-300"
               />
             </div>
             <div>
               <button
                 type="submit"
                 disabled={submitting}
-                className={`w-full bg-emerald-400 text-gray-950 font-semibold p-2 rounded-md hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-colors duration-300 ${submitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                className={`w-full bg-green-500 text-gray-950 font-semibold p-2 rounded-md hover:bg-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50 transition-colors duration-300 ${submitting ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 {submitting ? 'Signing In...' : 'Sign In'}
               </button>
@@ -97,24 +94,23 @@ export default function LoginPage() {
               <div className="mb-2">Or login as:</div>
               <a
                 href="/admin/login"
-                className="mx-2 text-emerald-400 underline font-medium hover:text-emerald-300 transition-colors"
+                className="mx-2 text-green-400 underline font-medium hover:text-green-300 transition-colors"
               >
                 Admin
               </a>
               <a
                 href="/teacher/login"
-                className="mx-2 text-emerald-400 underline font-medium hover:text-emerald-300 transition-colors"
+                className="mx-2 text-green-400 underline font-medium hover:text-green-300 transition-colors"
               >
                 Teacher
               </a>
             </div>
           </form>
-          {/* Toast */}
           <ToastContainer position="top-right" />
           <div className="mt-4 text-sm text-gray-400 text-center">
             <p>
               Don&apos;t have an account?{" "}
-              <a href="/signup" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+              <a href="/signup" className="text-green-400 hover:text-green-300 transition-colors">
                 Sign Up here
               </a>
             </p>
