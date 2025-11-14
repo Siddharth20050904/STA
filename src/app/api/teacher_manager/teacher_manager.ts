@@ -62,23 +62,15 @@ export const updateTeacherFields = async({name, subjects, email, department, id}
     id: string
 })=>{
     try{
-        const removedTeacher = await prisma.teachers.delete({where:{id}});
-        if(!removedTeacher){
-            console.log("Teacher is not removed");
-            return null;
-        }
-
-        const updatedTeacher = await prisma.teachers.create({
+        const updatedTeacher = await prisma.teachers.update({
+            where:{id},
             data:{
                 name,
                 subjects,
-                email,
-                department,
-                type: "TEACHER",
-                isVerified: true,
-                verificationToken: ''
+                department
             }
         });
+        
         if(!updatedTeacher){
             console.log("Error in updating teacher");
             return null;
